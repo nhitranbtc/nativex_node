@@ -1,0 +1,32 @@
+[package]
+name = "nativex-node"
+version = "4.0.0-dev"
+build = "build.rs"
+description = "A fresh FRAME-based Substrate node, ready for hacking."
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[package.metadata.docs.rs]
+targets = ["x86_64-unknown-linux-gnu"]
+
+[[bin]]
+name = "nativex"
+path = "src/main.rs"
+
+[dependencies]
+
+nativex-cli = {path = 'cli'}
+nativex-service = {path = 'service'}
+
+[build-dependencies]
+substrate-build-script-utils = { workspace = true}
+
+[features]
+default = []
+
+with-development-runtime = [
+	"nativex-service/with-development-runtime",
+	"nativex-cli/with-development-runtime",
+]

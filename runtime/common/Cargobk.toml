@@ -1,0 +1,28 @@
+[package]
+name = "runtime-common"
+version = "4.0.0-dev"
+description = "A fresh FRAME-based Substrate node, ready for hacking."
+authors = ["tranthiainhi303@gmail.com"]
+homepage = "https://substrate.io/"
+edition = "2021"
+license = "MIT-0"
+publish = false
+repository = "https://github.com/substrate-developer-hub/substrate-node-template/"
+
+
+
+[dependencies]
+#sp-runtime = {version = "24.0.0"}
+sp-runtime = { version = "7.0.0", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.42" }
+frame-system = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.42" }
+frame-support = { version = "4.0.0-dev", default-features = false, git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v0.9.42" }
+common-primitives = { default-features = false, path = "../../primitives/common" }
+
+[features]
+default = ["std"]
+std = [
+    "frame-system/std",
+    "frame-support/std",
+    "sp-runtime/std",
+    "common-primitives/std",
+]

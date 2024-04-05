@@ -1,0 +1,25 @@
+[package]
+name = "runtime-common"
+version = "4.0.0-dev"
+description = "A fresh FRAME-based Substrate node, ready for hacking."
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+
+
+[dependencies]
+sp-runtime = { workspace = true }
+frame-system = { workspace = true }
+frame-support = { workspace = true }
+common-primitives = { workspace = true }
+
+[features]
+default = ["std"]
+std = [
+    "frame-system/std",
+    "frame-support/std",
+    "sp-runtime/std",
+    "common-primitives/std",
+]

@@ -1,0 +1,37 @@
+[package]
+name = "nativex-rand-extension"
+version = "4.0.0-dev"
+description = "A fresh FRAME-based Substrate node, ready for hacking."
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+
+[dependencies]
+parity-scale-codec = {workspace = true }
+scale-info =  { workspace = true }
+frame-support =  { workspace = true }
+frame-system =  { workspace = true }
+sp-core =  { workspace = true }
+sp-runtime = { workspace = true }
+sp-std =  { workspace = true }
+pallet-contracts =  { workspace = true }
+pallet-insecure-randomness-collective-flip =  { workspace = true }
+
+[features]
+default = ['std']
+std = [
+	'parity-scale-codec/std',
+	'scale-info/std',
+	'frame-support/std',
+	'frame-system/std',
+	'sp-core/std',
+	'sp-std/std',
+	'sp-runtime/std',
+	'pallet-contracts/std',
+	'pallet-insecure-randomness-collective-flip/std',
+	#'pallet-balances/std',
+	#'common-primitives/std',
+]
+
