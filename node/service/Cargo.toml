@@ -73,6 +73,7 @@ sc-basic-authorship = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
 pallet-transaction-payment-rpc = { workspace = true }
 
+sc-offchain = { workspace = true }
 sc-network-sync = { workspace = true }
 sc-authority-discovery = { workspace = true }
 mmr-rpc = { workspace = true }

@@ -5,9 +5,10 @@ impl pallet_asset_rate::Config for Runtime {
 	type CreateOrigin = EnsureRoot<AccountId>;
 	type RemoveOrigin = EnsureRoot<AccountId>;
 	type UpdateOrigin = EnsureRoot<AccountId>;
-	type Balance = Balance;
 	type Currency = Balances;
-	type AssetId = u32;
+	type AssetKind = u32;
 	type RuntimeEvent = RuntimeEvent;
 	type WeightInfo = pallet_asset_rate::weights::SubstrateWeight<Runtime>;
+	#[cfg(feature = "runtime-benchmarks")]
+	type BenchmarHelper = ();
 }

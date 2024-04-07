@@ -1,11 +1,10 @@
 use frame_election_provider_support::onchain;
 use frame_support::{
 	parameter_types,
-	traits::{ConstU32, EitherOfDiverse, EnsureOneOf, U128CurrencyToVote},
+	traits::{ConstU32, EitherOfDiverse, EnsureOneOf},
 };
 use frame_system::EnsureRoot;
 use pallet_staking::OffendingValidators;
-use sp_staking::OnStakerSlash;
 
 use sp_runtime::{curve::PiecewiseLinear, Perbill, SaturatedConversion};
 
@@ -33,6 +32,9 @@ parameter_types! {
 	pub HistoryDepth: u32 = 84;
 }
 
+/// Uper limit on the number of NPOS nominations.
+const MAX_QUOTA_NOMINATIONS: u32 = 16;
+
 pub struct StakingBenchmarkingConfig;
 impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
 	type MaxNominators = ConstU32<1000>;
@@ -40,11 +42,10 @@ impl pallet_staking::BenchmarkingConfig for StakingBenchmarkingConfig {
 }
 
 impl pallet_staking::Config for Runtime {
-	type MaxNominations = MaxNominations;
 	type Currency = Balances;
 	type CurrencyBalance = Balance;
 	type UnixTime = Timestamp;
-	type CurrencyToVote = U128CurrencyToVote;
+	type CurrencyToVote = sp_staking::currency_to_vote::U128CurrencyToVote;
 	type RewardRemainder = Treasury;
 	type RuntimeEvent = RuntimeEvent;
 	type Slash = Treasury; // send the slashed funds to the treasury.
@@ -67,9 +68,10 @@ impl pallet_staking::Config for Runtime {
 	type VoterList = VoterList;
 	// This a placeholder, to be introduced in the next PR as an instance of bags-list
 	type TargetList = pallet_staking::UseValidatorsMap<Self>;
+	type NominationsQuota = pallet_staking::FixedNominationsQuota<MAX_QUOTA_NOMINATIONS>;
 	type MaxUnlockingChunks = ConstU32<32>;
 	type HistoryDepth = HistoryDepth;
-	type OnStakerSlash = NominationPools;
+	type EventListeners = NominationPools;
 	type WeightInfo = pallet_staking::weights::SubstrateWeight<Runtime>;
 	type BenchmarkingConfig = StakingBenchmarkingConfig;
 }

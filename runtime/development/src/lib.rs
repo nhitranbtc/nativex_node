@@ -3,8 +3,13 @@
 #![recursion_limit = "512"]
 
 pub use common_primitives::{AccountId, Signature};
-use common_primitives::{AccountIndex, Balance, BlockNumber, Hash, Index, Moment};
-use frame_election_provider_support::{onchain, BalancingConfig, SequentialPhragmen, VoteWeight};
+use common_primitives::{AccountIndex, Balance, BlockNumber, Hash, Index, Moment, Nonce};
+pub use frame_election_provider_support::{
+	bounds::{ElectionBounds, ElectionBoundsBuilder},
+	onchain, BalancingConfig, ElectionDataProvider, SequentialPhragmen, VoteWeight,
+};
+pub use pallet_election_provider_multi_phase::{GeometricDepositBase, SolutionAccuracyOf};
+
 pub use frame_support::{
 	construct_runtime,
 	dispatch::DispatchClass,
@@ -17,7 +22,7 @@ pub use frame_support::{
 		tokens::{nonfungibles_v2::Inspect, GetSalary, PayFromAccount},
 		AsEnsureOriginWithArg, ConstBool, ConstU128, ConstU16, ConstU32, Currency, EitherOfDiverse,
 		EqualPrivilegeOnly, Everything, Imbalance, InstanceFilter, KeyOwnerProofSystem,
-		LockIdentifier, Nothing, OnUnbalanced, U128CurrencyToVote, WithdrawReasons,
+		LinearStoragePrice, LockIdentifier, Nothing, OnUnbalanced, WithdrawReasons,
 	},
 	weights::{
 		constants::{
@@ -25,7 +30,7 @@ pub use frame_support::{
 		},
 		ConstantMultiplier, IdentityFee, Weight,
 	},
-	BoundedVec, PalletId, RuntimeDebug,
+	BoundedVec, PalletId,
 };
 use frame_system::Key;
 pub use frame_system::{
@@ -50,6 +55,7 @@ pub use sp_runtime::{
 	},
 	transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
 	ApplyExtrinsicResult, FixedPointNumber, FixedU128, Perbill, Percent, Permill, Perquintill,
+	RuntimeDebug,
 };
 use sp_std::prelude::*;
 #[cfg(feature = "std")]
@@ -214,10 +220,8 @@ impl frame_system::Config for Runtime {
 	type RuntimeOrigin = RuntimeOrigin;
 	/// The aggregated dispatch type that is available for extrinsics.
 	type RuntimeCall = RuntimeCall;
-	/// The index type for storing how many extrinsics an account has signed.
-	type Index = Index;
-	/// The index type for blocks.
-	type BlockNumber = BlockNumber;
+	type Nonce = Nonce;
+
 	/// The type for hashing blocks and tries.
 	type Hash = Hash;
 	/// The hashing algorithm used.
@@ -229,9 +233,8 @@ impl frame_system::Config for Runtime {
 	/// The lookup mechanism to get account ID from whatever is passed in dispatchers.
 	//type Lookup = AccountIdLookup<AccountId, ()>;
 	type Lookup = Indices;
+	type Block = Block;
 
-	/// The header type.
-	type Header = generic::Header<BlockNumber, BlakeTwo256>;
 	/// The ubiquitous event type.
 	type RuntimeEvent = RuntimeEvent;
 	/// Maximum number of block number to block hash mappings to keep (oldest pruned first).
@@ -285,29 +288,6 @@ parameter_types! {
 
 parameter_types! {
 	pub const BagThreshold: &'static [u64] = &voter_bags::THRESHOLDS;
-}
-
-frame_election_provider_support::generate_solution_type!(
-	#[compact]
-	pub struct NposSolution16::<
-		VoterIndex = u32,
-		TargetIndex = u16,
-		Accuracy = sp_runtime::PerU16,
-		MaxVoters = MaxElectingVoters,
-	>(16)
-);
-
-parameter_types! {
-	pub MaxNominations: u32 = <NposSolution16 as frame_election_provider_support::NposSolution>::LIMIT as u32;
-	pub MaxElectingVoters: u32 = 40_000;
-	//pub MaxElectableTargets: u16 = 10_000;
-	// Onchain values are lower.
-	pub MaxOnChainElectingVoters: u32 = 5000;
-	pub MaxOnChainElectableTargets: u16 = 1250;
-
-	// The maximum winners that can be elected by the Election pallet which is equivalent
-	// to the maximum active validators the staking pallet can have.
-	pub MaxActiveValidators: u32 = 1000;
 }
 
 /// Maximum number of iterations for balancing that will be executed in the embedded OCW

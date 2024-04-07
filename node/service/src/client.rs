@@ -211,6 +211,21 @@ impl sc_client_api::backend::StorageProvider<Block, crate::FullBackend> for Clie
 	) -> sp_blockchain::Result<Option<<Block as BlockT>::Hash>> {
 		match_client!(self, child_storage_hash(hash, child_info, key))
 	}
+	fn closest_merkle_value(
+		&self,
+		hash: <Block as BlockT>::Hash,
+		key: &sc_client_api::StorageKey,
+	) -> sp_blockchain::Result<Option<sp_trie::MerkleValue<<Block as BlockT>::Hash>>> {
+		match_client!(self, closest_merkle_value(hash, key))
+	}
+	fn child_closest_merkle_value(
+		&self,
+		hash: <Block as BlockT>::Hash,
+		child_info: &sc_client_api::ChildInfo,
+		key: &sc_client_api::StorageKey,
+	) -> sp_blockchain::Result<Option<sp_trie::MerkleValue<<Block as BlockT>::Hash>>> {
+		match_client!(self, child_closest_merkle_value(hash, child_info, key))
+	}
 	fn child_storage_keys(
 		&self,
 		hash: <Block as BlockT>::Hash,
@@ -267,13 +282,13 @@ pub trait RuntimeApiCollection:
 	//+ mmr_rpc::MmrRuntimeApi<Block, <Block as sp_runtime::traits::Block>::Hash, BlockNumber>
 	//+ fp_rpc::EthereumRuntimeRPCApi<Block>
 	//+ fp_rpc::ConvertTransactionRuntimeApi<Block>
-where
-	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
+// where
+// 	B: sc_client_api::Backend<Block> + Send + Sync + 'static,
+// 	B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>,
 {
 }
 
-impl<Api> RuntimeApiCollection for Api
-where
+impl<Api> RuntimeApiCollection for Api where
 	Api: sp_api::ApiExt<Block>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ sp_api::Metadata<Block>
@@ -286,13 +301,7 @@ where
 		+ sp_session::SessionKeys<Block>
 		+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
-		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
-	//+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce>,
-	//+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
-	//+ pallet_contracts_rpc::ContractsRuntimeApi<Block, AccountId, Balance, BlockNumber, Hash>
-	//+ mmr_rpc::MmrRuntimeApi<Block, <Block as sp_runtime::traits::Block>::Hash, BlockNumber>,
-	//+ fp_rpc::EthereumRuntimeRPCApi<Block>
-	//+ fp_rpc::ConvertTransactionRuntimeApi<Block>
-	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
+		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> // B: sc_client_api::Backend<Block> + Send + Sync + 'static,
+	                                                                               // B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>,
 {
 }

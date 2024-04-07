@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use frame_support::{
-	log::{error, trace},
+	//log::{error, trace},
 	traits::Randomness,
 };
 use pallet_contracts::chain_extension::{
@@ -35,7 +35,7 @@ where
 					pallet_insecure_randomness_collective_flip::Pallet::<T>::random(&arg);
 
 				let random_slice = random_seed.0.encode();
-				trace!(
+				log::trace!(
 					target: "runtime",
 					"[ChainExtension]|call|func_id:{:}",
 					func_id
@@ -45,7 +45,7 @@ where
 			},
 
 			_ => {
-				error!("Called an unregistered `func_id`: {:}", func_id);
+				log::error!("Called an unregistered `func_id`: {:}", func_id);
 				return Err(DispatchError::Other("Unimplemented func_id"));
 			},
 		}

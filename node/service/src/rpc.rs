@@ -82,12 +82,12 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	C::Api: RuntimeApiCollection<StateBackend = BE::State>,
+	C::Api: RuntimeApiCollection,
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
 	SC: SelectChain<Block> + 'static,
 	BE: sc_client_api::Backend<Block> + Send + Sync + 'static,
-	BE::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashFor<Block>>,
+	BE::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>,
 	BE::Blockchain: BlockchainBackend<Block>,
 {
 	//use mmr_rpc::{Mmr, MmrApiServer};
