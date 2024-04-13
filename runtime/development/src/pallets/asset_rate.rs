@@ -1,4 +1,5 @@
-/// The AssetRate pallet provides means of setting conversion rates for some asset to native balance.
+/// The AssetRate pallet provides means of setting conversion rates for some asset to native
+/// balance.
 use crate::*;
 
 impl pallet_asset_rate::Config for Runtime {

@@ -9,7 +9,7 @@ repository.workspace = true
 
 
 [dependencies]
-parity-scale-codec = {workspace = true }
+codec = {workspace = true }
 scale-info =  { workspace = true }
 frame-support =  { workspace = true }
 frame-system =  { workspace = true }
@@ -22,7 +22,7 @@ pallet-insecure-randomness-collective-flip =  { workspace = true }
 [features]
 default = ['std']
 std = [
-	'parity-scale-codec/std',
+	'codec/std',
 	'scale-info/std',
 	'frame-support/std',
 	'frame-system/std',

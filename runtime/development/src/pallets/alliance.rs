@@ -4,7 +4,8 @@ parameter_types! {
 	pub const MaxFellows: u32 = AllianceMaxMembers::get();
 	pub const MaxAllies: u32 = 100;
 	pub const AllyDeposit: Balance = 10 * NATIVEX;
-	pub const RetirementPeriod: BlockNumber = ALLIANCE_MOTION_DURATION_IN_BLOCKS + (1 * DAYS);
+	pub const RetirementPeriod: BlockNumber =
+		ALLIANCE_MOTION_DURATION_IN_BLOCKS + 1 * DAYS;
 }
 
 impl pallet_alliance::Config for Runtime {

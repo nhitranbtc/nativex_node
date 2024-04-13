@@ -1,5 +1,6 @@
 /// A simple pallet providing a means of placing a linear curve on an account's locked balance.
-/// This pallet ensures that there is a lock in place preventing the balance to drop below the unvested amount.
+/// This pallet ensures that there is a lock in place preventing the balance to drop below the
+/// unvested amount.
 use crate::*;
 
 parameter_types! {

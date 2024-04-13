@@ -1,6 +1,7 @@
 use pallet_nis::WithMaximumOf;
 
-/// A pallet allowing accounts to auction for being frozen and receive open-ended inflation-protection in return.
+/// A pallet allowing accounts to auction for being frozen and receive open-ended
+/// inflation-protection in return.
 use crate::*;
 
 parameter_types! {

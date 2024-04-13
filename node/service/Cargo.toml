@@ -14,7 +14,7 @@ repository.workspace = true
 # third-party dependencies
 array-bytes = { workspace = true}
 clap = { workspace = true, optional = true }
-parity-scale-codec = { workspace = true}
+codec = { workspace = true}
 serde = { workspace = true}
 jsonrpsee = { workspace = true}
 futures = { workspace = true}

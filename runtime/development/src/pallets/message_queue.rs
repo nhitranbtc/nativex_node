@@ -1,4 +1,5 @@
-/// Provides generalized message queuing and processing capabilities on a per-queue basic for arbitrary use-cases.
+/// Provides generalized message queuing and processing capabilities on a per-queue basic for
+/// arbitrary use-cases.
 use crate::*;
 
 parameter_types! {

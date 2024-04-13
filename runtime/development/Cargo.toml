@@ -13,7 +13,7 @@ repository.workspace = true
 
 [dependencies]
 #third-party dependenciesmm
-parity-scale-codec = { workspace = true } 
+codec = { workspace = true } 
 scale-info =  { workspace = true }
 static_assertions ={ workspace = true } 
 log = { workspace = true }
@@ -67,6 +67,7 @@ pallet-bounties = { workspace = true }
 pallet-child-bounties = { workspace = true }
 pallet-collective = { workspace = true }
 pallet-contracts = { workspace = true }
+pallet-contracts-primitives = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-core-fellowship = { workspace = true }
 pallet-election-provider-multi-phase = { workspace = true }
@@ -134,7 +135,7 @@ substrate-wasm-builder = { workspace = true, optional = true }
 [features]
 default = ["std"]
 std = [
-	"parity-scale-codec/std",
+	"codec/std",
 	"scale-info/std",
 	"frame-benchmarking?/std",
 	"frame-election-provider-support/std",

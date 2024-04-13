@@ -14,8 +14,8 @@ impl Get<Option<BalancingConfig>> for OffchainRandomBalancing {
 			max => {
 				let seed = sp_io::offchain::random_seed();
 				let random = <u32>::decode(&mut TrailingZeroInput::new(&seed))
-					.expect("input is padded with zeroes; qed")
-					% max.saturating_add(1);
+					.expect("input is padded with zeroes; qed") %
+					max.saturating_add(1);
 				random as usize
 			},
 		};
@@ -23,7 +23,6 @@ impl Get<Option<BalancingConfig>> for OffchainRandomBalancing {
 		Some(config)
 	}
 }
-
 
 pub struct OnChainSeqPhragmen;
 impl onchain::Config for OnChainSeqPhragmen {
@@ -79,52 +78,49 @@ parameter_types! {
 }
 
 impl pallet_election_provider_multi_phase::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Currency = Balances;
-    type EstimateCallFee = TransactionPayment;
-    type SignedPhase = SignedPhase;
-    type UnsignedPhase = UnsignedPhase;
-    type BetterUnsignedThreshold = BetterUnsignedThreshold;
-    type BetterSignedThreshold = ();
-    type OffchainRepeat = OffchainRepeat;
-    type MinerTxPriority = MultiPhaseUnsignedPriority;
-    type MinerConfig = Self;
-    type SignedMaxSubmissions = ConstU32<10>;
-    type SignedRewardBase = SignedRewardBase;
-    type SignedDepositBase = SignedDepositBase;
-    type SignedDepositByte = SignedDepositByte;
-    type SignedMaxRefunds = ConstU32<3>;
-    type SignedDepositWeight = ();
-    type SignedMaxWeight = MinerMaxWeight;
-    type SlashHandler = (); // burn slashes
-    type RewardHandler = (); // nothing to do upon rewards.
-    type DataProvider = Staking;
-    type Fallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
-    type GovernanceFallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
-    type Solver = SequentialPhragmen<AccountId, SolutionAccuracyOf<Self>, OffchainRandomBalancing>;
-    type ForceOrigin = EnsureRootOrHalfCouncil;
-    type MaxElectableTargets = MaxOnChainElectableTargets;
-    type MaxWinners = MaxActiveValidators;
-    type MaxElectingVoters =  MaxElectingVoters;
-    type BenchmarkingConfig = ElectionProviderBenchmarkConfig;
-    type WeightInfo = pallet_election_provider_multi_phase::weights::SubstrateWeight<Runtime>;
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
+	type EstimateCallFee = TransactionPayment;
+	type SignedPhase = SignedPhase;
+	type UnsignedPhase = UnsignedPhase;
+	type BetterUnsignedThreshold = BetterUnsignedThreshold;
+	type BetterSignedThreshold = ();
+	type OffchainRepeat = OffchainRepeat;
+	type MinerTxPriority = MultiPhaseUnsignedPriority;
+	type MinerConfig = Self;
+	type SignedMaxSubmissions = ConstU32<10>;
+	type SignedRewardBase = SignedRewardBase;
+	type SignedDepositBase = SignedDepositBase;
+	type SignedDepositByte = SignedDepositByte;
+	type SignedMaxRefunds = ConstU32<3>;
+	type SignedDepositWeight = ();
+	type SignedMaxWeight = MinerMaxWeight;
+	type SlashHandler = (); // burn slashes
+	type RewardHandler = (); // nothing to do upon rewards.
+	type DataProvider = Staking;
+	type Fallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
+	type GovernanceFallback = onchain::OnChainExecution<OnChainSeqPhragmen>;
+	type Solver = SequentialPhragmen<AccountId, SolutionAccuracyOf<Self>, OffchainRandomBalancing>;
+	type ForceOrigin = EnsureRootOrHalfCouncil;
+	type MaxElectableTargets = MaxOnChainElectableTargets;
+	type MaxWinners = MaxActiveValidators;
+	type MaxElectingVoters = MaxElectingVoters;
+	type BenchmarkingConfig = ElectionProviderBenchmarkConfig;
+	type WeightInfo = pallet_election_provider_multi_phase::weights::SubstrateWeight<Runtime>;
 }
 
 impl pallet_election_provider_multi_phase::MinerConfig for Runtime {
-    type AccountId = AccountId;
-    type MaxLength = MinerMaxLength;
-    type MaxWeight = MinerMaxWeight;
-    type Solution = NposSolution16;
-    type MaxVotesPerVoter = <<
+	type AccountId = AccountId;
+	type MaxLength = MinerMaxLength;
+	type MaxWeight = MinerMaxWeight;
+	type Solution = NposSolution16;
+	type MaxVotesPerVoter = <<
     Self as pallet_election_provider_multi_phase::Config>::DataProvider as ElectionDataProvider>::MaxVotesPerVoter;
-    type MaxWinners = MaxActiveValidators;
+	type MaxWinners = MaxActiveValidators;
 
-    // The unsigned submissions have to respect the weight of the submit_unsigned call, thus their
-    // weight estimate function is wired to this call's weight.
-    fn solution_weight(voters: u32, targets: u32, active_voters: u32, degree: u32) -> Weight {
-        <
-        <Self as pallet_election_provider_multi_phase::Config>::WeightInfo as 
-        pallet_election_provider_multi_phase::WeightInfo>::submit_unsigned(voters, targets, active_voters, degree)
-    }
-    
+	// The unsigned submissions have to respect the weight of the submit_unsigned call, thus their
+	// weight estimate function is wired to this call's weight.
+	fn solution_weight(voters: u32, targets: u32, active_voters: u32, degree: u32) -> Weight {
+		<<Self as pallet_election_provider_multi_phase::Config>::WeightInfo as pallet_election_provider_multi_phase::WeightInfo>::submit_unsigned(voters, targets, active_voters, degree)
+	}
 }

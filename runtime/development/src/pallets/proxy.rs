@@ -55,11 +55,11 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 			ProxyType::Governance => matches!(
 				c,
 				//RuntimeCall::Demoracy(..)
-				| RuntimeCall::Council(..)
-					// | RuntimeCall::Society(..)
-					// | RuntimeCall::TechnicalCommittee(..)
-				//	| RuntimeCall::Elections(..)
-					| RuntimeCall::Treasury(..)
+				|RuntimeCall::Council(..) /* | RuntimeCall::Society(..)
+				                           * | RuntimeCall::TechnicalCommittee(..)
+				                           *	| RuntimeCall::Elections(..) */| RuntimeCall::Treasury(
+					..
+				)
 			),
 			ProxyType::Staking => {
 				matches!(

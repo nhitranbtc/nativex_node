@@ -1,5 +1,5 @@
-/// The recovery pallet í an M-of-N social recovery tool for users to gain access to their accounts
-/// if the private key or other authentication mechanisim is lost.
+/// The recovery pallet í an M-of-N social recovery tool for users to gain access to their
+/// accounts if the private key or other authentication mechanisim is lost.
 use crate::*;
 
 parameter_types! {

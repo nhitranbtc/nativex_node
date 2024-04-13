@@ -1,6 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use parity_scale_codec::Encode;
+use codec::Encode;
 use frame_benchmarking::v2::frame_support::{storage::PrefixIterator, StoragePrefixedMap};
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use frame_system_rpc_runtime_api::AccountNonceApi;
@@ -8,17 +8,23 @@ use futures::prelude::*;
 use sc_client_api::BlockBackend;
 use sc_consensus_babe::{self, SlotProportion};
 pub use sc_executor::NativeElseWasmExecutor;
+use sc_executor::NativeExecutionDispatch;
 use sc_network::{event::Event, NetworkEventStream, NetworkService};
 use sc_network_common::sync::warp::WarpSyncParams;
 use sc_network_sync::SyncingService;
-use sc_service::{config::Configuration, error::Error as ServiceError, RpcHandlers, TaskManager, ChainSpec};
-use sc_executor::{NativeExecutionDispatch};
+use sc_service::{
+	config::Configuration, error::Error as ServiceError, ChainSpec, RpcHandlers, TaskManager,
+};
 //use sc_statement_store::Store as StatementStore;
 use sc_telemetry::{telemetry, Telemetry, TelemetryWorker};
 use sp_api::ConstructRuntimeApi;
 use sp_core::crypto::Pair;
 
-use sp_runtime::{traits::{Block as BlockT, BlakeTwo256}, generic, SaturatedConversion};
+use sp_runtime::{
+	generic,
+	traits::{BlakeTwo256, Block as BlockT},
+	SaturatedConversion,
+};
 use sp_trie::PrefixedMemoryDB;
 use std::sync::Arc;
 
@@ -27,7 +33,6 @@ pub use common_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index}
 pub mod chain_spec;
 pub mod client;
 pub mod rpc;
-
 
 #[cfg(feature = "with-development-runtime")]
 pub use chain_spec::development::*;
@@ -321,7 +326,7 @@ where
 
 /// Builds a new service for a full client.
 pub fn new_full_base<RuntimeApi, Executor>(
-	 config: Configuration,
+	config: Configuration,
 ) -> Result<NewFullBase<RuntimeApi, Executor>, ServiceError>
 where
 	RuntimeApi:
@@ -342,15 +347,15 @@ where
 	} = new_partial(&config)?;
 	let shared_voter_state = rpc_setup;
 	let auth_disc_publish_non_global_ips = config.network.allow_non_globals_in_dht;
-	//let mut net_config = sc_network::config::NetworkConfiguration::new(&config.network);
+	let mut net_config = sc_network::config::FullNetworkConfiguration::new(&config.network);
 
 	let grandpa_protocol_name = grandpa::protocol_standard_name(
 		&client.block_hash(0).ok().flatten().expect("Genesis block exists; qed"),
 		&config.chain_spec,
 	);
-	//net_config.add_notification_protocol(grandpa::grandpa_peers_set_config(
-	//	grandpa_protocol_name.clone(),
-	//));
+	net_config.add_notification_protocol(grandpa::grandpa_peers_set_config(
+		grandpa_protocol_name.clone(),
+	));
 	// let statement_handler_proto = sc_network_statement::StatementHandlerPrototype::new(
 	// 	client
 	// 		.block_hash((0u32).into())
@@ -375,7 +380,7 @@ where
 	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
-			// net_config,
+			net_config,
 			client: client.clone(),
 			transaction_pool: transaction_pool.clone(),
 			spawn_handle: task_manager.spawn_handle(),
@@ -419,7 +424,7 @@ where
 	let (block_import, grandpa_link, babe_link) = import_setup;
 	//(wit_startup_data)(&block_import, &babe_link);
 
-	if let sc_service::config::Role::Authority {..} = &role {
+	if let sc_service::config::Role::Authority { .. } = &role {
 		let proposer = sc_basic_authorship::ProposerFactory::new(
 			task_manager.spawn_handle(),
 			client.clone(),
@@ -442,16 +447,14 @@ where
 				let client_clone = client_clone.clone();
 				async move {
 					let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-					let slot = 
-					sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(*timestamp, slot_duration);
-					let storage_proof = 
-					sp_transaction_storage_proof::registration::new_data_provider(
-						&*client_clone,
-						&parent,
-					)?;
+					let slot = sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(*timestamp, slot_duration);
+					let storage_proof =
+						sp_transaction_storage_proof::registration::new_data_provider(
+							&*client_clone,
+							&parent,
+						)?;
 					Ok((slot, timestamp, storage_proof))
 				}
-
 			},
 			force_authoring,
 			backoff_authoring_blocks,
@@ -463,46 +466,42 @@ where
 		let babe = sc_consensus_babe::start_babe(babe_config)?;
 		task_manager.spawn_essential_handle().spawn_blocking(
 			"babe-proposer",
-			 Some("block-authroing"),
-			 babe,
-			);
-
+			Some("block-authroing"),
+			babe,
+		);
 	}
 
 	if role.is_authority() {
-		let authority_discovery_role = 
-		sc_authority_discovery::Role::PublishAndDiscover(keystore_container.keystore());
-			let dht_event_stream =
+		let authority_discovery_role =
+			sc_authority_discovery::Role::PublishAndDiscover(keystore_container.keystore());
+		let dht_event_stream =
 			network.event_stream("authority-discovery").filter_map(|e| async move {
 				match e {
 					Event::Dht(e) => Some(e),
 					_ => None,
 				}
 			});
-		let (authority_discovery_worker, _service) = 
+		let (authority_discovery_worker, _service) =
 			sc_authority_discovery::new_worker_and_service_with_config(
 				sc_authority_discovery::WorkerConfig {
 					publish_non_global_ips: auth_disc_publish_non_global_ips,
 					..Default::default()
-
 				},
-				client.clone(), 
-				network.clone(), 
-				Box::pin(dht_event_stream), 
-				authority_discovery_role, 
+				client.clone(),
+				network.clone(),
+				Box::pin(dht_event_stream),
+				authority_discovery_role,
 				prometheus_registry.clone(),
 			);
-			task_manager.spawn_handle().spawn(
-				"authority-discovery-worker",
-				Some("networking"),
-				authority_discovery_worker.run(),
-			);
+		task_manager.spawn_handle().spawn(
+			"authority-discovery-worker",
+			Some("networking"),
+			authority_discovery_worker.run(),
+		);
 	}
 	// if the node isn't actively participating in consensus then it doesn't
 	// need a keystore, regardless of which protocol we use below
-	let keystore = if role.is_authority() 
-	{ Some(keystore_container.keystore())} 
-	else { None};
+	let keystore = if role.is_authority() { Some(keystore_container.keystore()) } else { None };
 
 	let config = grandpa::Config {
 		// FIXE #1578 make this available through chainspec.
@@ -544,7 +543,14 @@ where
 	}
 
 	network_starter.start_network();
-	Ok(NewFullBase { task_manager, client, network, sync: sync_service, transaction_pool , rpc_handlers,})
+	Ok(NewFullBase {
+		task_manager,
+		client,
+		network,
+		sync: sync_service,
+		transaction_pool,
+		rpc_handlers,
+	})
 }
 
 /// Builds a new service for a full client.

@@ -2,6 +2,7 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "512"]
 
+use codec::{Decode, Encode, MaxEncodedLen};
 pub use common_primitives::{AccountId, Signature};
 use common_primitives::{AccountIndex, Balance, BlockNumber, Hash, Index, Moment};
 use frame_election_provider_support::{onchain, BalancingConfig, SequentialPhragmen, VoteWeight};
@@ -35,7 +36,6 @@ pub use frame_system::{
 use pallet_grandpa::AuthorityId as GrandpaId;
 use pallet_session::historical as pallet_session_historical;
 pub use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
-use parity_scale_codec::{Decode, Encode, MaxEncodedLen};
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -107,7 +107,7 @@ pub const CALL_PARAMS_MAX_SIZE: usize = 208;
 pub fn wasm_binary_unwrap() -> &'static [u8] {
 	WASM_BINARY.expect(
 		"Development wasm binary is not availabe. This means the client is built with \
-		`SKIP_WASM_BUILD` flag and it is only usable for production chains. Please rebuild with the flag disabled. ",
+		`SKIP_WASM_BUILD` flag and it is only usable for production chains. Please rebuild with the flag disabled. "
 	)
 }
 
@@ -274,9 +274,11 @@ type EnsureRootOrHalfCouncil = EitherOfDiverse<
 type CouncilCollective = pallet_collective::Instance1;
 
 parameter_types! {
-	pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+	pub const ImOnlineUnsignedPriority: TransactionPriority =
+		TransactionPriority::max_value();
 	/// We prioritize im-online heartbeats over election solution submission.
-	pub const StakingUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+	pub const StakingUnsignedPriority: TransactionPriority =
+		TransactionPriority::max_value();
 	pub const MaxAuthorities: u32 = 100;
 	pub const MaxKeys: u32 = 10_000;
 	pub const MaxPeerInHeartbeats: u32 = 10_000;
@@ -641,7 +643,7 @@ impl_runtime_apis! {
 			_slot: sp_consensus_babe::Slot,
 			authority_id: sp_consensus_babe::AuthorityId,
 		) -> Option<sp_consensus_babe::OpaqueKeyOwnershipProof> {
-			use parity_scale_codec::Encode;
+			use codec::Encode;
 			Historical::prove((sp_consensus_babe::KEY_TYPE, authority_id))
 			.map(|p| p.encode())
 			.map(sp_consensus_babe::OpaqueKeyOwnershipProof::new)
@@ -680,13 +682,82 @@ impl_runtime_apis! {
 		}
 
 	}
-
 	impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
 		fn account_nonce(account: AccountId) -> Index {
 			System::account_nonce(account)
 		}
 	}
+	impl pallet_contracts::ContractsApi<Block, AccountId, Balance, BlockNumber, Hash, EventRecord> for Runtime {
+		fn call(
+			origin: AccountId,
+			dest: AccountId,
+			value: Balance,
+			gas_limit: Option<Weight>,
+			storage_deposit_limit: Option<Balance>,
+			input_data: Vec<u8>,
+		) -> pallet_contracts_primitives::ContractExecResult<Balance, EventRecord> {
+			let gas_limit = gas_limit.unwrap_or(RuntimeBlockWeights::get().max_block);
+			Contracts::bare_call(
+				origin,
+				dest,
+				value,
+				gas_limit,
+				storage_deposit_limit,
+				input_data,
+				pallet_contracts::DebugInfo::UnsafeDebug,
+				pallet_contracts::CollectEvents::UnsafeCollect,
+				pallet_contracts::Determinism::Enforced,
+			)
+		}
+				fn instantiate(
+			origin: AccountId,
+			value: Balance,
+			gas_limit: Option<Weight>,
+			storage_deposit_limit: Option<Balance>,
+			code: pallet_contracts_primitives::Code<Hash>,
+			data: Vec<u8>,
+			salt: Vec<u8>,
+		) -> pallet_contracts_primitives::ContractInstantiateResult<AccountId, Balance, EventRecord>
+		{
+			let gas_limit = gas_limit.unwrap_or(RuntimeBlockWeights::get().max_block);
+			Contracts::bare_instantiate(
+				origin,
+				value,
+				gas_limit,
+				storage_deposit_limit,
+				code,
+				data,
+				salt,
+				pallet_contracts::DebugInfo::UnsafeDebug,
+				pallet_contracts::CollectEvents::UnsafeCollect,
+			)
+		}
 
+		fn upload_code(
+			origin: AccountId,
+			code: Vec<u8>,
+			storage_deposit_limit: Option<Balance>,
+			determinism: pallet_contracts::Determinism,
+		) -> pallet_contracts_primitives::CodeUploadResult<Hash, Balance>
+		{
+			Contracts::bare_upload_code(
+				origin,
+				code,
+				storage_deposit_limit,
+				determinism,
+			)
+		}
+
+		fn get_storage(
+			address: AccountId,
+			key: Vec<u8>,
+		) -> pallet_contracts_primitives::GetStorageResult {
+			Contracts::get_storage(
+				address,
+				key
+			)
+		}
+	}
 	impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance> for Runtime {
 		fn query_info(
 			uxt: <Block as BlockT>::Extrinsic,

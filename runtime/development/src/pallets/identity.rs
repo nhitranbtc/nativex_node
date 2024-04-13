@@ -1,4 +1,5 @@
-/// A federated naming system, allowing for multiple registrars to be added from a specified origin.
+/// A federated naming system, allowing for multiple registrars to be added from a specified
+/// origin.
 use crate::*;
 
 parameter_types! {

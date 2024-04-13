@@ -23,6 +23,7 @@ Use the following command to build the node without launching it:
 ```sh
 make run-release
 ```
+
 #### Start the first node
 
 ```
@@ -36,25 +37,24 @@ make run-release
   --rpc-methods Unsafe \
   --name NativexNode01 \
   --password-interactive
-  ```
+```
 
- #### Enable other participants to join
- 
- ```
+#### Enable other participants to join
+
+```
 ./target/release/nativex \
-  --base-path /tmp/node02 \
-  --chain ./customSpecRaw.json \
-  --port 30334 \
-  --rpc-port 9946 \
-  --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
-  --validator \
-  --rpc-methods Unsafe \
-  --name NativexNode02 \
-  --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/{NativexNode01Id} \
-  --password-interactive
+ --base-path /tmp/node02 \
+ --chain ./customSpecRaw.json \
+ --port 30334 \
+ --rpc-port 9946 \
+ --telemetry-url "wss://telemetry.polkadot.io/submit/ 0" \
+ --validator \
+ --rpc-methods Unsafe \
+ --name NativexNode02 \
+ --bootnodes /ip4/127.0.0.1/tcp/30333/p2p/{NativexNode01Id} \
+ --password-interactive
 
- ``` 
-
+```
 
 Development chains:
 
@@ -62,7 +62,6 @@ Development chains:
 - Use the **Alice** and **Bob** accounts as default validator authorities.
 - Use the **Alice** account as the default `sudo` account.
 - Are preconfigured with a genesis state (`/node/service/chain_spec/development.rs`) that includes several prefunded development accounts.
-
 
 ### Connect with Polkadot-JS Apps Front-End
 
@@ -73,4 +72,3 @@ You can also find the source code and instructions for hosting your own instance
 ### Multi-Node Local Testnet
 
 If you want to see the multi-node consensus algorithm in action, see [Simulate a network](https://docs.substrate.io/tutorials/get-started/simulate-network/).
-

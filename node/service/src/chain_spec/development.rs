@@ -2,10 +2,10 @@ use crate::chain_spec::{authority_keys_from_seed, get_account_id_from_seed};
 use common_primitives::{AccountId, Balance};
 use development_runtime::{
 	AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, CouncilConfig, DemocracyConfig,
-	ElectionsConfig, GenesisConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig, MaxNominations,
-	NominationPoolsConfig, SessionConfig, SessionKeys, Signature, SocietyConfig, StakerStatus,
-	StakingConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, NATIVEX, TOKEN_DECIMALS,
-	TOKEN_SYMBOL, WASM_BINARY,
+	ElectionsConfig, GenesisConfig, GluttonConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig,
+	MaxNominations, NominationPoolsConfig, SessionConfig, SessionKeys, Signature, SocietyConfig,
+	StakerStatus, StakingConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, NATIVEX,
+	TOKEN_DECIMALS, TOKEN_SYMBOL, WASM_BINARY,
 };
 use grandpa_primitives::AuthorityId as GrandpaId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -286,6 +286,11 @@ fn testnet_genesis(
 			min_create_bond: 10 * NATIVEX,
 			min_join_bond: 1 * NATIVEX,
 			..Default::default()
+		},
+		glutton: GluttonConfig {
+			compute: Default::default(),
+			storage: Default::default(),
+			trash_data_count: Default::default(),
 		},
 	}
 }

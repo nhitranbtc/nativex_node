@@ -1,5 +1,5 @@
-/// The preimage pallet allows for the users and the runtime to store the preimage of hash on chain.
-/// This can be used by other pallets for storing and managing large byte-blobs.
+/// The preimage pallet allows for the users and the runtime to store the preimage of hash on
+/// chain. This can be used by other pallets for storing and managing large byte-blobs.
 use crate::*;
 
 parameter_types! {

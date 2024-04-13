@@ -1,5 +1,5 @@
-/// Allows control of membership of a set of AccountIds, useful for managing membership of a collective.
-/// A prime member maybe set.
+/// Allows control of membership of a set of AccountIds, useful for managing membership of a
+/// collective. A prime member maybe set.
 use crate::*;
 
 type EnsureRootOrHalfCouncil = EitherOfDiverse<

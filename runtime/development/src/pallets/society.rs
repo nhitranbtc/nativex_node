@@ -1,4 +1,5 @@
-/// The society pallet is enconomic game which incentivizes users to participate and maintain a membership society.
+/// The society pallet is enconomic game which incentivizes users to participate and maintain a
+/// membership society.
 use crate::*;
 
 parameter_types! {
