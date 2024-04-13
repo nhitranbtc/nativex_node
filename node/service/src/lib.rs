@@ -1,7 +1,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use codec::Encode;
-use frame_benchmarking::v2::frame_support::{storage::PrefixIterator, StoragePrefixedMap};
 use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
@@ -10,15 +9,14 @@ use sc_consensus_babe::{self, SlotProportion};
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_executor::NativeExecutionDispatch;
 use sc_network::{event::Event, NetworkEventStream, NetworkService};
-use sc_network_common::sync::warp::WarpSyncParams;
-use sc_network_sync::SyncingService;
+use sc_network_sync::{warp::WarpSyncParams, SyncingService};
 use sc_service::{
 	config::Configuration, error::Error as ServiceError, ChainSpec, RpcHandlers, TaskManager,
 };
 //use sc_statement_store::Store as StatementStore;
-use sc_telemetry::{telemetry, Telemetry, TelemetryWorker};
+use sc_telemetry::{Telemetry, TelemetryWorker};
+use sc_transaction_pool_api::OffchainTransactionPoolFactory;
 use sp_api::ConstructRuntimeApi;
-use sp_core::crypto::Pair;
 
 use sp_runtime::{
 	generic,
@@ -56,6 +54,9 @@ type FullGranpaBlockImport<RuntimeApi, Executor> = grandpa::GrandpaBlockImport<
 	FullClient<RuntimeApi, Executor>,
 	FullSelectChain,
 >;
+/// The minimum period of blocks on which justifications will be
+/// imported and generated.
+const GRANDPA_JUSTIFICATION_PERIOD: u32 = 512;
 
 #[cfg(feature = "with-development-runtime")]
 pub struct DevelopmentExecutor;
@@ -96,19 +97,13 @@ impl IdentifyVariant for Box<dyn ChainSpec> {
 pub fn new_chain_ops(
 	config: &mut Configuration,
 ) -> Result<
-	(
-		Arc<Client>,
-		Arc<FullBackend>,
-		sc_consensus::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
-		TaskManager,
-	),
+	(Arc<Client>, Arc<FullBackend>, sc_consensus::BasicQueue<Block>, TaskManager),
 	ServiceError,
 > {
 	match &config.chain_spec {
 		#[cfg(feature = "with-development-runtime")]
-		spec if spec.is_development() => {
-			new_chain_ops_inner::<development_runtime::RuntimeApi, DevelopmentExecutor>(config)
-		},
+		spec if spec.is_development() =>
+			new_chain_ops_inner::<development_runtime::RuntimeApi, DevelopmentExecutor>(config),
 		_ => panic!("invalid chain spec"),
 	}
 }
@@ -117,20 +112,14 @@ pub fn new_chain_ops(
 fn new_chain_ops_inner<RuntimeApi, Executor>(
 	mut config: &mut Configuration,
 ) -> Result<
-	(
-		Arc<Client>,
-		Arc<FullBackend>,
-		sc_consensus::BasicQueue<Block, PrefixedMemoryDB<BlakeTwo256>>,
-		TaskManager,
-	),
+	(Arc<Client>, Arc<FullBackend>, sc_consensus::BasicQueue<Block>, TaskManager),
 	ServiceError,
 >
 where
 	Client: From<Arc<crate::FullClient<RuntimeApi, Executor>>>,
 	RuntimeApi:
 		ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
-	RuntimeApi::RuntimeApi:
-		RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+	RuntimeApi::RuntimeApi: RuntimeApiCollection,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	config.keystore = sc_service::config::KeystoreConfig::InMemory;
@@ -146,7 +135,7 @@ pub fn new_partial<RuntimeApi, Executor>(
 		FullClient<RuntimeApi, Executor>,
 		FullBackend,
 		FullSelectChain,
-		sc_consensus::DefaultImportQueue<Block, FullClient<RuntimeApi, Executor>>,
+		sc_consensus::DefaultImportQueue<Block>,
 		TransactionPool<RuntimeApi, Executor>,
 		(
 			impl Fn(
@@ -172,8 +161,7 @@ pub fn new_partial<RuntimeApi, Executor>(
 where
 	RuntimeApi:
 		ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
-	RuntimeApi::RuntimeApi:
-		RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+	RuntimeApi::RuntimeApi: RuntimeApiCollection,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let telemetry = config
@@ -214,6 +202,7 @@ where
 
 	let (grandpa_block_import, grandpa_link) = grandpa::block_import(
 		client.clone(),
+		GRANDPA_JUSTIFICATION_PERIOD,
 		&(client.clone() as Arc<_>),
 		select_chain.clone(),
 		telemetry.as_ref().map(|x| x.handle()),
@@ -226,25 +215,26 @@ where
 	)?;
 
 	let slot_duration = babe_link.config().slot_duration();
-	let (import_queue, babe_worker_handle) = sc_consensus_babe::import_queue(
-		babe_link.clone(),
-		block_import.clone(),
-		Some(Box::new(justification_import)),
-		client.clone(),
-		select_chain.clone(),
-		move |_, ()| async move {
-			let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
-			let slot =
-				sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
-					*timestamp,
-					slot_duration
-				);
-			Ok((slot, timestamp))
-		},
-		&task_manager.spawn_essential_handle(),
-		config.prometheus_registry(),
-		telemetry.as_ref().map(|x| x.handle()),
-	)?;
+	let (import_queue, babe_worker_handle) =
+		sc_consensus_babe::import_queue(sc_consensus_babe::ImportQueueParams {
+			link: babe_link.clone(),
+			block_import: block_import.clone(),
+			justification_import: Some(Box::new(justification_import)),
+			client: client.clone(),
+			select_chain: select_chain.clone(),
+			create_inherent_data_providers: move |_, ()| async move {
+				let timestamp = sp_timestamp::InherentDataProvider::from_system_time();
+				let slot = sp_consensus_babe::inherents::InherentDataProvider::from_timestamp_and_slot_duration(
+				*timestamp,
+				slot_duration,
+			);
+				Ok((slot, timestamp))
+			},
+			spawner: &task_manager.spawn_essential_handle(),
+			registry: config.prometheus_registry(),
+			telemetry: telemetry.as_ref().map(|x| x.handle()),
+			offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool.clone()),
+		})?;
 	let import_setup = (block_import, grandpa_link, babe_link);
 	let (rpc_extension_builder, rpc_setup) = {
 		let (_, grandpa_link, _) = &import_setup;
@@ -306,8 +296,9 @@ pub struct NewFullBase<RuntimeApi, Executor>
 where
 	RuntimeApi:
 		ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
-	RuntimeApi::RuntimeApi:
-		RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+	RuntimeApi::RuntimeApi: RuntimeApiCollection,
+	// RuntimeApi::RuntimeApi:
+	// 	RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	/// The task of manager of the node.
@@ -331,8 +322,7 @@ pub fn new_full_base<RuntimeApi, Executor>(
 where
 	RuntimeApi:
 		ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
-	RuntimeApi::RuntimeApi:
-		RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+	RuntimeApi::RuntimeApi: RuntimeApiCollection,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	let sc_service::PartialComponents {
@@ -356,6 +346,9 @@ where
 	net_config.add_notification_protocol(grandpa::grandpa_peers_set_config(
 		grandpa_protocol_name.clone(),
 	));
+	net_config.add_notification_protocol(grandpa::grandpa_peers_set_config(
+		grandpa_protocol_name.clone(),
+	));
 	// let statement_handler_proto = sc_network_statement::StatementHandlerPrototype::new(
 	// 	client
 	// 		.block_hash((0u32).into())
@@ -372,11 +365,6 @@ where
 		Vec::default(),
 	));
 
-	// config
-	// 	.network
-	// 	.extra_sets
-	// 	.push(grandpa::grandpa_peers_set_config(grandpa_protocol_name.clone()));
-
 	let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
 		sc_service::build_network(sc_service::BuildNetworkParams {
 			config: &config,
@@ -389,15 +377,6 @@ where
 			warp_sync_params: Some(WarpSyncParams::WithProvider(warp_sync)),
 		})?;
 
-	if config.offchain_worker.enabled {
-		sc_service::build_offchain_workers(
-			&config,
-			task_manager.spawn_handle(),
-			client.clone(),
-			network.clone(),
-		);
-	}
-
 	let role = config.role.clone();
 	let force_authoring = config.force_authoring;
 	//let backoff_authoring_blocks: Option<()> = None;
@@ -406,6 +385,7 @@ where
 	let name = config.network.node_name.clone();
 	let enable_grandpa = !config.disable_grandpa;
 	let prometheus_registry = config.prometheus_registry().cloned();
+	let enable_offchain_worker = config.offchain_worker.enabled;
 
 	let rpc_handlers = sc_service::spawn_tasks(sc_service::SpawnTasksParams {
 		config,
@@ -506,7 +486,7 @@ where
 	let config = grandpa::Config {
 		// FIXE #1578 make this available through chainspec.
 		gossip_duration: std::time::Duration::from_millis(333),
-		justification_period: 512,
+		justification_generation_period: GRANDPA_JUSTIFICATION_PERIOD,
 		name: Some(name),
 		observer_enabled: false,
 		keystore,
@@ -531,6 +511,7 @@ where
 			voting_rule: grandpa::VotingRulesBuilder::default().build(),
 			prometheus_registry: prometheus_registry.clone(),
 			shared_voter_state,
+			offchain_tx_pool_factory: OffchainTransactionPoolFactory::new(transaction_pool.clone()),
 		};
 
 		// the GRANDPA voter task is considered infallible, i.e.
@@ -541,6 +522,29 @@ where
 			grandpa::run_grandpa_voter(grandpa_config)?,
 		);
 	}
+
+	// if enable_offchain_worker {
+	// 	task_manager.spawn_handle().spawn(
+	// 		"offchain-workers-runner",
+	// 		"offchain-work",
+	// 		sc_offchain::OffchainWorkers::new(sc_offchain::OffchainWorkerOptions {
+	// 			runtime_api_provider: client.clone(),
+	// 			keystore: Some(keystore_container.keystore()),
+	// 			offchain_db: backend.offchain_storage(),
+	// 			transaction_pool: Some(OffchainTransactionPoolFactory::new(
+	// 				transaction_pool.clone(),
+	// 			)),
+	// 			network_provider: network.clone(),
+	// 			is_validator: role.is_authority(),
+	// 			enable_http_requests: true,
+	// 			custom_extensions: move |_| {
+	// 				vec![Box::new(statement_store.clone().as_statement_store_ext()) as Box<_>]
+	// 			},
+	// 		})
+	// 		.run(client.clone(), task_manager.spawn_handle())
+	// 		.boxed(),
+	// 	);
+	// }
 
 	network_starter.start_network();
 	Ok(NewFullBase {
@@ -558,8 +562,7 @@ pub fn new_full<RuntimeApi, Executor>(config: Configuration) -> Result<TaskManag
 where
 	RuntimeApi:
 		ConstructRuntimeApi<Block, FullClient<RuntimeApi, Executor>> + Send + Sync + 'static,
-	RuntimeApi::RuntimeApi:
-		RuntimeApiCollection<StateBackend = sc_client_api::StateBackendFor<FullBackend, Block>>,
+	RuntimeApi::RuntimeApi: RuntimeApiCollection,
 	Executor: NativeExecutionDispatch + 'static,
 {
 	new_full_base::<RuntimeApi, Executor>(config)

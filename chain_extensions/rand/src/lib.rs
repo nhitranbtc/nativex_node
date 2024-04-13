@@ -1,10 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::Encode;
-use frame_support::{
-	log::{error, trace},
-	traits::Randomness,
-};
+use frame_support::traits::Randomness;
+use log::{error, trace};
 use pallet_contracts::chain_extension::{
 	ChainExtension, Environment, Ext, InitState, RetVal, SysConfig,
 };

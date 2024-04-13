@@ -9,6 +9,7 @@ repository.workspace = true
 
 
 [dependencies]
+log = {workspace = true }
 codec = {workspace = true }
 scale-info =  { workspace = true }
 frame-support =  { workspace = true }

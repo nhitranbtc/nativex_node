@@ -1,18 +1,18 @@
 use crate::chain_spec::{authority_keys_from_seed, get_account_id_from_seed};
 use common_primitives::{AccountId, Balance};
 use development_runtime::{
-	AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, CouncilConfig, DemocracyConfig,
-	ElectionsConfig, GenesisConfig, GluttonConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig,
-	MaxNominations, NominationPoolsConfig, SessionConfig, SessionKeys, Signature, SocietyConfig,
-	StakerStatus, StakingConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig, NATIVEX,
-	TOKEN_DECIMALS, TOKEN_SYMBOL, WASM_BINARY,
+	wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, CouncilConfig,
+	DemocracyConfig, ElectionsConfig, GenesisConfig, GluttonConfig, GrandpaConfig, ImOnlineConfig,
+	IndicesConfig, MaxNominations, NominationPoolsConfig, SessionConfig, SessionKeys, Signature,
+	SocietyConfig, StakerStatus, StakingConfig, SudoConfig, SystemConfig, TechnicalCommitteeConfig,
+	BABE_GENESIS_EPOCH_CONFIG, NATIVEX, TOKEN_DECIMALS, TOKEN_SYMBOL, WASM_BINARY,
 };
 use grandpa_primitives::AuthorityId as GrandpaId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use sc_service::{ChainType, Properties};
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_consensus_babe::AuthorityId as BabeId;
-use sp_consensus_beefy::crypto::AuthorityId as BeefyId;
+//use sp_consensus_beefy::crypto::AuthorityId as BeefyId;
 use sp_core::{sr25519, Pair, Public};
 use sp_runtime::{
 	traits::{IdentifyAccount, Verify},
@@ -198,10 +198,7 @@ fn testnet_genesis(
 
 	let num_endowed_accounts = endowed_accounts.len();
 	GenesisConfig {
-		system: SystemConfig {
-			// Add Wasm runtime to storage.
-			code: wasm_binary.to_vec(),
-		},
+		system: SystemConfig { code: wasm_binary_unwrap().to_vec(), ..Default::default() },
 		balances: BalancesConfig {
 			balances: endowed_accounts.iter().cloned().map(|x| (x, ENDOWMENT)).collect(),
 		},
@@ -254,24 +251,13 @@ fn testnet_genesis(
 			// Assign network admin rights.
 			key: Some(root_key),
 		},
-		babe: BabeConfig {
-			authorities: vec![],
-			epoch_config: Some(development_runtime::BABE_GENESIS_EPOCH_CONFIG),
-		},
+		babe: BabeConfig { epoch_config: Some(BABE_GENESIS_EPOCH_CONFIG), ..Default::default() },
 		im_online: ImOnlineConfig { keys: vec![] },
-		authority_discovery: AuthorityDiscoveryConfig { keys: vec![] },
-		grandpa: GrandpaConfig { authorities: vec![] },
+		authority_discovery: Default::default(),
+		grandpa: Default::default(),
 		technical_membership: Default::default(),
 		treasury: Default::default(),
-		society: SocietyConfig {
-			members: endowed_accounts
-				.iter()
-				.take((num_endowed_accounts + 1) / 2)
-				.cloned()
-				.collect(),
-			pot: 0,
-			max_members: 999,
-		},
+		society: SocietyConfig { pot: 0 },
 		vesting: Default::default(),
 		assets: pallet_assets::GenesisConfig {
 			// This asset is used by the NIS pallet as counterpart currency.
@@ -287,10 +273,6 @@ fn testnet_genesis(
 			min_join_bond: 1 * NATIVEX,
 			..Default::default()
 		},
-		glutton: GluttonConfig {
-			compute: Default::default(),
-			storage: Default::default(),
-			trash_data_count: Default::default(),
-		},
+		glutton: Default::default(),
 	}
 }

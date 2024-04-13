@@ -48,7 +48,7 @@ sc-consensus = { workspace = true }
 grandpa = { workspace = true }
 sc-consensus-grandpa-rpc = { workspace = true }
 grandpa-primitives = { workspace = true }
-sp-consensus-beefy = { workspace = true }
+#sp-consensus-beefy = { workspace = true }
 sc-client-api = { workspace = true }
 sp-timestamp = { workspace = true }
 sp-authority-discovery = { workspace = true }
