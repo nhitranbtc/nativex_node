@@ -30,7 +30,7 @@ static_assertions = "1.1.0"
 # third-party dependencies
 clap = { version = "4.2.5", features = ["derive"]}
 codec = { package = "parity-scale-codec", version = "3.6.1" }
-serde = { version = "1.0.163", features = ["derive"] }
+serde = { version = "1.0.198", features = ["derive"] }
 jsonrpsee = { version = "0.16.2", features = ["server"] }
 futures = "0.3.21"
 rand = "0.8"
