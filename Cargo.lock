@@ -281,9 +281,9 @@ checksum = "f52f63c5c1316a16a4b35eaac8b76a98248961a533f061684cb2a7cb0eafb6c6"
 
 [[package]]
 name = "array-bytes"
-version = "6.2.2"
+version = "6.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f840fb7195bcfc5e17ea40c26e5ce6d5b9ce5d584466e17703209657e459ae0"
+checksum = "5d5dde061bd34119e902bbb2d9b90c5692635cf59fb91d582c2b68043f1b8293"
 
 [[package]]
 name = "arrayref"
@@ -1631,7 +1631,7 @@ dependencies = [
 name = "development-runtime"
 version = "4.0.0-dev"
 dependencies = [
- "array-bytes 6.2.2",
+ "array-bytes 6.2.3",
  "common-primitives",
  "frame-benchmarking",
  "frame-election-provider-support",
@@ -4637,7 +4637,7 @@ dependencies = [
 name = "nativex-cli"
 version = "4.0.0-dev"
 dependencies = [
- "array-bytes 6.2.2",
+ "array-bytes 6.2.3",
  "clap",
  "clap_complete",
  "common-primitives",
@@ -4695,7 +4695,7 @@ dependencies = [
 name = "nativex-service"
 version = "4.0.0-dev"
 dependencies = [
- "array-bytes 6.2.2",
+ "array-bytes 6.2.3",
  "clap",
  "common-primitives",
  "development-runtime",
