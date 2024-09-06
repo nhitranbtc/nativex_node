@@ -12,9 +12,6 @@ debug:
 run:
 	cargo run --features with-development-runtime -- --chain=dev --tmp -lruntime=debug --rpc-external  
 
-.PHONY: run-alice
-run-alice:
-	cargo run --features with-development-runtime -- --alice --chain=dev --tmp -lruntime=debug --rpc-external  
 .PHONY: run-release
 run-release:
-	cargo run --release --features with-development-runtime -- --alice --chain=dev --tmp -lruntime=debug --rpc-external  
+	cargo run --release --features with-development-runtime -- --chain=dev --tmp -lruntime=debug --rpc-external  
