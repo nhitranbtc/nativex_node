@@ -14,7 +14,9 @@ array-bytes = { workspace = true }
 clap = { workspace = true ,  optional = true }
 codec = { workspace = true }
 serde = { workspace = true }
-jsonrpsee ={ workspace = true }
+serde_json = { workspace = true, default-features = true }
+jsonrpsee ={ features = ["server"], workspace = true }
+scale-info = { version = "2.11.1", features = ["derive", "serde"] }
 futures = { workspace = true }
 log = { workspace = true }
 rand = { workspace = true }
@@ -37,7 +39,7 @@ frame-benchmarking = { workspace = true }
 frame-benchmarking-cli = { workspace = true , optional = true }
 
 # CLI-specific dependencies
-try-runtime-cli = { workspace = true , optional = true }
+# try-runtime-cli = { workspace = true , optional = true }
 #node-inspect = { workspace = true }
 pallet-transaction-payment = { workspace = true , optional = true }
 frame-system = { workspace = true , optional = true }
@@ -77,7 +79,7 @@ cli = [
 	"clap_complete",
 	"frame-system",
 	"frame-benchmarking-cli",
-	"try-runtime-cli",
+	# "try-runtime-cli",
 ]
 
 with-development-runtime = ["service/with-development-runtime"]

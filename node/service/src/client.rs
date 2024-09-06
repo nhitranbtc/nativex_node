@@ -1,12 +1,13 @@
 use crate::{AccountId, Balance, Block, Index};
 use common_primitives::BlockNumber;
-use sp_api::NumberFor;
 use sp_runtime::{
 	generic::SignedBlock,
-	traits::{BlakeTwo256, Block as BlockT},
+	traits::{BlakeTwo256, Block as BlockT, NumberFor},
 	Justifications,
 };
 use std::sync::Arc;
+
+use sp_blockchain::{self as blockchain};
 
 #[derive(Clone)]
 pub enum Client {
@@ -226,6 +227,23 @@ impl sc_client_api::backend::StorageProvider<Block, crate::FullBackend> for Clie
 	> {
 		match_client!(self, child_storage_keys(hash, child_info, prefix, start_key))
 	}
+
+	fn closest_merkle_value(
+		&self,
+		hash: <Block as BlockT>::Hash,
+		key: &sc_client_api::StorageKey,
+	) -> blockchain::Result<Option<sp_trie::MerkleValue<<Block as BlockT>::Hash>>> {
+		match_client!(self, closest_merkle_value(hash, key))
+	}
+
+	fn child_closest_merkle_value(
+		&self,
+		hash: <Block as BlockT>::Hash,
+		child_info: &sc_client_api::ChildInfo,
+		key: &sc_client_api::StorageKey,
+	) -> blockchain::Result<Option<sp_trie::MerkleValue<<Block as BlockT>::Hash>>> {
+		match_client!(self, child_closest_merkle_value(hash, child_info, key))
+	}
 }
 
 impl sc_client_api::UsageProvider<Block> for Client {
@@ -288,6 +306,6 @@ impl<Api> RuntimeApiCollection for Api where
 		+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> /* B: sc_client_api::Backend<Block> + Send + Sync + 'static,
-	                                                                                * B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>, */
+	                                                                                 * B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>, */
 {
 }

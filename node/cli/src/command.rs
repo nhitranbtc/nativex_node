@@ -42,11 +42,15 @@ impl SubstrateCli for Cli {
 	}
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
-		Ok(match id {
+		let spec = match id {
+			"" => return Err(
+					"Please specify which chain you want to run, e.g. --dev or --chain=local"
+						.into(),
+				),
 			#[cfg(feature = "with-development-runtime")]
-			"dev" => Box::new(chain_spec::development::development_config()?),
+			"dev" => Box::new(chain_spec::development::development_config()),
 			#[cfg(feature = "with-development-runtime")]
-			"" | "local" => Box::new(chain_spec::development::local_testnet_config()?),
+			"local" => Box::new(chain_spec::development::development_config()),
 			//path => Box::new(chain_spec::development::ChainSpec::from_json_file(
 			//	std::path::PathBuf::from(path),
 			//)?),
@@ -66,7 +70,8 @@ impl SubstrateCli for Cli {
 					return Err(service::RUNTIME_NOT_AVAILABLE.into());
 				}
 			},
-		})
+		};
+		Ok(spec)
 	}
 }
 

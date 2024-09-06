@@ -5,11 +5,14 @@ use frame_benchmarking_cli::SUBSTRATE_REFERENCE_HARDWARE;
 use frame_system_rpc_runtime_api::AccountNonceApi;
 use futures::prelude::*;
 use sc_client_api::BlockBackend;
+use sc_consensus::metrics;
 use sc_consensus_babe::{self, SlotProportion};
 pub use sc_executor::NativeElseWasmExecutor;
 use sc_executor::NativeExecutionDispatch;
-use sc_network::{event::Event, NetworkEventStream, NetworkService};
-use sc_network_sync::{warp::WarpSyncParams, SyncingService};
+use sc_network::{
+	event::Event, service::traits::NetworkService, NetworkBackend, NetworkEventStream,
+};
+use sc_network_sync::{strategy::warp::WarpSyncParams, SyncingService};
 use sc_service::{
 	config::Configuration, error::Error as ServiceError, ChainSpec, RpcHandlers, TaskManager,
 };
@@ -24,7 +27,7 @@ use sp_runtime::{
 	SaturatedConversion,
 };
 use sp_trie::PrefixedMemoryDB;
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 pub use common_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 
@@ -306,7 +309,8 @@ where
 	/// The client instance of the node.
 	pub client: Arc<FullClient<RuntimeApi, Executor>>,
 	/// The networking service of the node.
-	pub network: Arc<NetworkService<Block, <Block as BlockT>::Hash>>,
+	// pub network: Arc<NetworkService<Block, <Block as BlockT>::Hash>>,
+	pub network: Arc<dyn NetworkService>,
 	/// The syncing service of the node.
 	pub sync: Arc<SyncingService<Block>>,
 	/// The transaction pool of the node.
@@ -316,7 +320,7 @@ where
 }
 
 /// Builds a new service for a full client.
-pub fn new_full_base<RuntimeApi, Executor>(
+pub fn new_full_base<N: NetworkBackend<Block, <Block as BlockT>::Hash>, RuntimeApi, Executor>(
 	config: Configuration,
 ) -> Result<NewFullBase<RuntimeApi, Executor>, ServiceError>
 where
@@ -335,20 +339,29 @@ where
 		transaction_pool,
 		other: (rpc_builder, import_setup, rpc_setup, mut telemetry),
 	} = new_partial(&config)?;
+
+	let metrics = N::register_notification_metrics(
+		config.prometheus_config.as_ref().map(|cfg| &cfg.registry),
+	);
+
 	let shared_voter_state = rpc_setup;
 	let auth_disc_publish_non_global_ips = config.network.allow_non_globals_in_dht;
-	let mut net_config = sc_network::config::FullNetworkConfiguration::new(&config.network);
+	let mut net_config =
+		sc_network::config::FullNetworkConfiguration::<_, _, N>::new(&config.network);
 
-	let grandpa_protocol_name = grandpa::protocol_standard_name(
-		&client.block_hash(0).ok().flatten().expect("Genesis block exists; qed"),
-		&config.chain_spec,
-	);
-	net_config.add_notification_protocol(grandpa::grandpa_peers_set_config(
-		grandpa_protocol_name.clone(),
-	));
-	net_config.add_notification_protocol(grandpa::grandpa_peers_set_config(
-		grandpa_protocol_name.clone(),
-	));
+	let genesis_hash = client.block_hash(0).ok().flatten().expect("Genesis block exists; qed");
+	let peer_store_handle = net_config.peer_store_handle();
+
+	let grandpa_protocol_name = grandpa::protocol_standard_name(&genesis_hash, &config.chain_spec);
+
+	let (grandpa_protocol_config, grandpa_notification_service) =
+		grandpa::grandpa_peers_set_config::<_, N>(
+			grandpa_protocol_name.clone(),
+			metrics.clone(),
+			Arc::clone(&peer_store_handle),
+		);
+	net_config.add_notification_protocol(grandpa_protocol_config);
+
 	// let statement_handler_proto = sc_network_statement::StatementHandlerPrototype::new(
 	// 	client
 	// 		.block_hash((0u32).into())
@@ -375,6 +388,8 @@ where
 			import_queue,
 			block_announce_validator_builder: None,
 			warp_sync_params: Some(WarpSyncParams::WithProvider(warp_sync)),
+			block_relay: None,
+			metrics,
 		})?;
 
 	let role = config.role.clone();
@@ -468,7 +483,7 @@ where
 					..Default::default()
 				},
 				client.clone(),
-				network.clone(),
+				Arc::new(network.clone()),
 				Box::pin(dht_event_stream),
 				authority_discovery_role,
 				prometheus_registry.clone(),
@@ -483,7 +498,7 @@ where
 	// need a keystore, regardless of which protocol we use below
 	let keystore = if role.is_authority() { Some(keystore_container.keystore()) } else { None };
 
-	let config = grandpa::Config {
+	let grandpa_config = grandpa::Config {
 		// FIXE #1578 make this available through chainspec.
 		gossip_duration: std::time::Duration::from_millis(333),
 		justification_generation_period: GRANDPA_JUSTIFICATION_PERIOD,
@@ -502,11 +517,12 @@ where
 		// and vote data availability than the observer. The observer has not
 		// been tested extensively yet and having most nodes in a network run it
 		// could lead to finality stalls.
-		let grandpa_config = grandpa::GrandpaParams {
-			config,
+		let grandpa_params = grandpa::GrandpaParams {
+			config: grandpa_config,
 			link: grandpa_link,
 			network: network.clone(),
 			sync: Arc::new(sync_service.clone()),
+			notification_service: grandpa_notification_service,
 			telemetry: telemetry.as_ref().map(|x| x.handle()),
 			voting_rule: grandpa::VotingRulesBuilder::default().build(),
 			prometheus_registry: prometheus_registry.clone(),
@@ -519,7 +535,7 @@ where
 		task_manager.spawn_essential_handle().spawn_blocking(
 			"grandpa-voter",
 			None,
-			grandpa::run_grandpa_voter(grandpa_config)?,
+			grandpa::run_grandpa_voter(grandpa_params)?,
 		);
 	}
 
@@ -565,6 +581,22 @@ where
 	RuntimeApi::RuntimeApi: RuntimeApiCollection,
 	Executor: NativeExecutionDispatch + 'static,
 {
-	new_full_base::<RuntimeApi, Executor>(config)
-		.map(|NewFullBase { task_manager, .. }| task_manager)
+	// let database_path = config.database.path().map(Path::to_path_buf);
+
+	let task_manager = match config.network.network_backend {
+		sc_network::config::NetworkBackendType::Libp2p => {
+			let task_manager =
+				new_full_base::<sc_network::NetworkWorker<_, _>, RuntimeApi, Executor>(config)
+					.map(|NewFullBase { task_manager, .. }| task_manager)?;
+			task_manager
+		},
+		sc_network::config::NetworkBackendType::Litep2p => {
+			let task_manager =
+				new_full_base::<sc_network::Litep2pNetworkBackend, RuntimeApi, Executor>(config)
+					.map(|NewFullBase { task_manager, .. }| task_manager)?;
+			task_manager
+		},
+	};
+
+	Ok(task_manager)
 }

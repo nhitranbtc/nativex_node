@@ -1,6 +1,6 @@
 use crate::{
-	AccountId, AllianceMotion, Assets, Authorship, Balances, Hash, NegativeImbalance, Runtime,
-	RuntimeCall,
+	AccountId, AllianceCollective, AllianceMotion, Assets, Authorship, Balances, Hash,
+	NegativeImbalance, Runtime, RuntimeCall,
 };
 use pallet_asset_tx_payment::HandleCredit;
 
@@ -12,6 +12,7 @@ use frame_support::{
 	},
 };
 use pallet_alliance::{IdentityVerifier, ProposalIndex, ProposalProvider};
+use pallet_identity::legacy::IdentityField;
 use pallet_society::Judgement;
 use pallet_treasury::Proposal;
 use sp_std::prelude::*;
@@ -39,13 +40,14 @@ impl HandleCredit<AccountId, Assets> for CreditToBlockAuthor {
 
 pub struct AllianceIdentityVerifier;
 impl IdentityVerifier<AccountId> for AllianceIdentityVerifier {
-	fn has_identity(who: &AccountId, fields: u64) -> bool {
-		crate::Identity::has_identity(who, fields)
+	fn has_required_identities(who: &AccountId) -> bool {
+		crate::Identity::has_identity(who, (IdentityField::Display | IdentityField::Web).bits())
 	}
+
 	fn has_good_judgement(who: &AccountId) -> bool {
 		use pallet_identity::Judgement;
 		crate::Identity::identity(who)
-			.map(|registration| registration.judgements)
+			.map(|(registration, _)| registration.judgements)
 			.map_or(false, |judgements| {
 				judgements
 					.iter()
@@ -85,6 +87,6 @@ impl ProposalProvider<AccountId, Hash, RuntimeCall> for AllianceProposalProvider
 		AllianceMotion::do_close(proposal_hash, proposal_index, proposal_weight_bound, length_bound)
 	}
 	fn proposal_of(proposal_hash: Hash) -> Option<RuntimeCall> {
-		AllianceMotion::proposal_of(proposal_hash)
+		pallet_collective::ProposalOf::<Runtime, AllianceCollective>::get(proposal_hash)
 	}
 }

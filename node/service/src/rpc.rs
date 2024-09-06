@@ -25,6 +25,8 @@ use sp_consensus_babe::BabeApi;
 use sp_keystore::KeystorePtr;
 use std::sync::Arc;
 
+use sc_service::Properties;
+
 #[cfg(feature = "with-development-runtime")]
 use development_runtime;
 
@@ -98,6 +100,7 @@ where
 		dev::{Dev, DevApiServer},
 		//statement::StatementApiServer,
 	};
+
 	use sc_rpc_spec_v2::chain_spec::{ChainSpec, ChainSpecApiServer};
 	use sc_sync_state_rpc::{SyncState, SyncStateApiServer};
 	use substrate_frame_rpc_system::{System, SystemApiServer};
@@ -114,7 +117,7 @@ where
 		finality_provider,
 	} = grandpa;
 
-	io.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+	io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
 	// Making sysnchronous calls in light client freezes the browser currently,
 	// more context: https://github.com/paritytech/substrate/pull/3480
 	// These RPCs should use an asynchronous caller instead.

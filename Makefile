@@ -7,8 +7,13 @@ build:
 PHONY: debug
 debug:
     cargo build --bin=nativex --package=nativex-node --message-format=json
+
 .PHONY: run
 run:
+	cargo run --features with-development-runtime -- --chain=dev --tmp -lruntime=debug --rpc-external  
+
+.PHONY: run-alice
+run-alice:
 	cargo run --features with-development-runtime -- --alice --chain=dev --tmp -lruntime=debug --rpc-external  
 .PHONY: run-release
 run-release:
