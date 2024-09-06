@@ -10,7 +10,7 @@ debug:
 
 .PHONY: run
 run:
-	cargo run --features with-development-runtime -- --chain=dev --tmp -lruntime=debug --rpc-external  
+	cargo run --features with-development-runtime -- --alice --dev 
 
 .PHONY: run-release
 run-release:

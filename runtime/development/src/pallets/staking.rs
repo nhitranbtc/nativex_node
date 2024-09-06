@@ -4,7 +4,6 @@ use frame_support::{
 	traits::{ConstU32, EitherOfDiverse, EnsureOneOf},
 };
 use frame_system::EnsureRoot;
-use pallet_staking::OffendingValidators;
 
 use sp_runtime::{curve::PiecewiseLinear, Perbill, SaturatedConversion};
 
@@ -63,7 +62,6 @@ impl pallet_staking::Config for Runtime {
 	type EraPayout = pallet_staking::ConvertCurve<RewardCurve>;
 	type NextNewSession = Session;
 	type MaxExposurePageSize = ConstU32<256>;
-	type OffendingValidatorsThreshold = OffendingValidatorsThreshold;
 	type ElectionProvider = ElectionProviderMultiPhase;
 	type GenesisElectionProvider = onchain::OnChainExecution<OnChainSeqPhragmen>;
 	type VoterList = VoterList;
@@ -76,4 +74,5 @@ impl pallet_staking::Config for Runtime {
 	type EventListeners = NominationPools;
 	type WeightInfo = pallet_staking::weights::SubstrateWeight<Runtime>;
 	type BenchmarkingConfig = StakingBenchmarkingConfig;
+	type DisablingStrategy = pallet_staking::UpToLimitDisablingStrategy;
 }

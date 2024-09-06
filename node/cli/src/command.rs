@@ -43,7 +43,8 @@ impl SubstrateCli for Cli {
 
 	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
 		let spec = match id {
-			"" => return Err(
+			"" =>
+				return Err(
 					"Please specify which chain you want to run, e.g. --dev or --chain=local"
 						.into(),
 				),
@@ -51,13 +52,15 @@ impl SubstrateCli for Cli {
 			"dev" => Box::new(chain_spec::development::development_config()),
 			#[cfg(feature = "with-development-runtime")]
 			"local" => Box::new(chain_spec::development::development_config()),
+			#[cfg(feature = "with-development-runtime")]
+			"staging" => Box::new(chain_spec::development::staging_testnet_config()),
 			//path => Box::new(chain_spec::development::ChainSpec::from_json_file(
 			//	std::path::PathBuf::from(path),
 			//)?),
 			path => {
 				let path = std::path::PathBuf::from(path);
 				let chain_spec =
-					Box::new(service::chain_spec::DummyChainSpec::from_json_file(path.clone())?)
+					Box::new(chain_spec::development::ChainSpec::from_json_file(path.clone())?)
 						as Box<dyn sc_service::ChainSpec>;
 				if chain_spec.is_development() {
 					#[cfg(feature = "with-development-runtime")]
