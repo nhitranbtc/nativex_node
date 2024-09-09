@@ -1,0 +1,119 @@
+[package]
+name = "nativex-collator"
+version = "4.0.0-dev"
+description = "A fresh FRAME-based Substrate node, ready for hacking."
+build = "build.rs"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+
+[[bin]]
+name = "nativex-collator"
+path = "bin/main.rs"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# third-party dependencies
+
+array-bytes = { workspace = true}
+clap = {  workspace = true }
+codec = { workspace = true}
+serde = { features = ["derive"], workspace = true}
+serde_json = { workspace = true, default-features = true }
+jsonrpsee = { features = ["server"], workspace = true}
+futures = { workspace = true}
+log = { workspace = true}
+rand = { workspace = true}
+
+
+
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-keyring = { workspace = true }
+sp-io = { workspace = true }
+
+#sc-statement-store = { workspace = true }
+#sc-network-statement = { workspace = true }
+sc-cli = { workspace = true }
+sc-network-common = { workspace = true }
+sc-network = { workspace = true }
+sc-executor = { workspace = true }
+sc-service = { workspace = true }
+sc-telemetry = { workspace = true }
+sc-rpc = { workspace = true }
+sc-transaction-pool = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
+sc-consensus-aura = { workspace = true }
+sp-consensus-aura = { workspace = true }
+sc-consensus-babe = { workspace = true }
+sc-consensus-babe-rpc = { workspace = true }
+sp-consensus-babe = { workspace = true }
+sp-consensus = { workspace = true }
+sc-consensus = { workspace = true }
+grandpa = { workspace = true }
+sc-consensus-grandpa-rpc = { workspace = true }
+grandpa-primitives = { workspace = true }
+#sp-consensus-beefy = { workspace = true }
+sc-client-api = { workspace = true }
+sp-timestamp = { workspace = true }
+sp-authority-discovery = { workspace = true }
+sp-inherents = { workspace = true }
+frame-system = { workspace = true }
+frame-system-rpc-runtime-api = { workspace = true }
+pallet-assets = { workspace = true }
+pallet-transaction-payment = { workspace = true }
+pallet-im-online = { workspace = true }
+
+# These dependencies are used for the node template's RPCs
+sp-trie = { workspace = true }
+sp-api = { workspace = true }
+sp-offchain = { workspace = true }
+sp-session = { workspace = true }
+sc-rpc-api = { workspace = true }
+sc-rpc-spec-v2 = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-block-builder = { workspace = true }
+sp-transaction-pool = { workspace = true }
+sc-basic-authorship = { workspace = true }
+substrate-frame-rpc-system = { workspace = true }
+pallet-transaction-payment-rpc = { workspace = true }
+
+sc-network-sync = { workspace = true }
+sc-authority-discovery = { workspace = true }
+mmr-rpc = { workspace = true }
+sc-chain-spec = { workspace = true }
+sp-keystore = { workspace = true }
+sc-sync-state-rpc = { workspace = true }
+sc-consensus-slots = { workspace = true }
+sp-transaction-storage-proof = { workspace = true }
+substrate-state-trie-migration-rpc = { workspace = true }
+
+# These dependencies are used for runtime benchmarking
+frame-benchmarking = { workspace = true }
+frame-benchmarking-cli = { workspace = true }
+
+# Local Dependencies
+development-runtime = { workspace = true, features = ["std"]}
+common-primitives = { workspace = true , features = ["std"]}
+
+# CLI-specific dependencies
+# try-runtime-cli = { workspace = true , optional = true }
+
+[build-dependencies]
+substrate-build-script-utils = { workspace = true }
+
+[features]
+default = ["std"]
+std = ["pallet-im-online/std"]
+# Dependencies that are only required if runtime benchmarking should be build.
+runtime-benchmarks = [
+	"development-runtime/runtime-benchmarks",
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-benchmarking-cli/runtime-benchmarks",
+]
+
+
