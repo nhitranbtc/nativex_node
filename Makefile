@@ -1,20 +1,28 @@
 PHONY: check
 check:
-	cargo check --features with-development-runtime
+	cargo check 
+
 PHONY: build
 build:
-	cargo build --features with-development-runtime
+	cargo build
+
+.PHONY: build-release
+build-release:
+	cargo build --release
+
 PHONY: debug
 debug:
     cargo build --bin=nativex --package=nativex-node --message-format=json
 
 .PHONY: run
 run:
-	cargo run --features with-development-runtime -- --chain=dev --tmp -lruntime=debug --rpc-external  
+	./target/release/nativex-collator --dev --alice --tmp -lruntime=info --rpc-external   
 
-.PHONY: run-alice
-run-alice:
-	cargo run --features with-development-runtime -- --alice --chain=dev --tmp -lruntime=debug --rpc-external  
+
+.PHONY: run-with-features
+run-with-features:
+	cargo run  -- --alice --dev 
+
 .PHONY: run-release
 run-release:
-	cargo run --release --features with-development-runtime -- --alice --chain=dev --tmp -lruntime=debug --rpc-external  
+	cargo run --release -- --chain=dev --tmp -lruntime=debug --rpc-external  

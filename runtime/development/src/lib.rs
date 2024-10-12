@@ -40,7 +40,6 @@ use pallet_session::historical as pallet_session_historical;
 pub use pallet_transaction_payment::{CurrencyAdapter, Multiplier, TargetedFeeAdjustment};
 use scale_info::TypeInfo;
 use sp_api::impl_runtime_apis;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::{crypto::KeyTypeId, OpaqueMetadata, TryCollect};
 pub use sp_runtime::{
 	create_runtime_str,
@@ -60,10 +59,13 @@ use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 use static_assertions::const_assert;
 
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+pub use pallet_staking::StakerStatus;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
+pub use sp_consensus_babe::AuthorityId as BabeId;
+
 #[cfg(any(feature = "std", test))]
 pub use frame_system::Call as SystemCall;
-#[cfg(any(feature = "std", test))]
-pub use pallet_staking::StakerStatus;
 #[cfg(any(feature = "std", test))]
 pub use pallet_sudo::Call as SudoCall;
 #[cfg(any(feature = "std", test))]
@@ -355,10 +357,6 @@ pub enum HoldReason {
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
 	pub struct Runtime
-	where
-		Block = Block,
-		NodeBlock = common_primitives::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic,
 	{
 		System: frame_system,
 		Utility: pallet_utility,
@@ -427,10 +425,12 @@ construct_runtime!(
 		MessageQueue: pallet_message_queue,
 		Remark: pallet_remark,
 		RootTesting: pallet_root_testing,
+		NodeAuthorization: pallet_node_authorization,
 
 
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
+
 	}
 );
 /// The address format for describing accounts.

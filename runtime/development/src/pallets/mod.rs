@@ -83,6 +83,9 @@ pub use message_queue::*;
 pub mod nomination_pools;
 pub use nomination_pools::*;
 
+pub mod node_authorization;
+pub use node_authorization::*;
+
 // // /// FRAME pallet for conviction voting in referenda
 pub mod conviction_voting;
 pub use conviction_voting::*;

@@ -1,6 +1,6 @@
 use crate::{
 	cli::{Cli, Subcommand},
-	local::{self, development_config},
+	local::{self, development_config, nativex_config},
 };
 
 use log::{error, info};
@@ -76,7 +76,10 @@ impl SubstrateCli for Cli {
 				),
 
 			"dev" => Box::new(development_config()),
-
+			// "nativex" => Box::new(nativex_config()),
+			"nativex" => Box::new(chain_spec::ChainSpec::from_json_bytes(
+				&include_bytes!("../res/nativex.raw.json")[..],
+			)?),
 			path => {
 				let chain_spec = chain_spec::ChainSpec::from_json_file(path.into())?;
 
@@ -193,7 +196,7 @@ pub fn run() -> sc_cli::Result<()> {
 						.map_err(sc_cli::Error::Service);
 					}
 				} else {
-					return Err(service::RUNTIME_NOT_AVAILABLE.into());
+					return Err(service::SUBCMD_RUNTIME_NOT_AVAILABLE.into());
 				}
 			})
 		},

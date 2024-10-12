@@ -28,6 +28,7 @@ jsonrpsee = { features = ["server"], workspace = true}
 futures = { workspace = true}
 log = { workspace = true}
 rand = { workspace = true}
+bs58 = { workspace = true }
 
 
 

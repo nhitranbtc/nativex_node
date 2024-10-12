@@ -37,6 +37,7 @@ use std::{path::Path, sync::Arc};
 pub use common_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 
 pub const RUNTIME_NOT_AVAILABLE: &str = "Opps, Runtime is not available";
+pub const RUNTIME_ID_NOT_AVAILABLE: &str = "Runtime ID is not available";
 pub const SUBCMD_RUNTIME_NOT_AVAILABLE: &str = "Opps-Subcmd is not available";
 pub const DEVELOPMENT_RUNTIME_NOT_AVAILABLE: &str = "Development runtime is not available";
 

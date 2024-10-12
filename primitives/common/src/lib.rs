@@ -25,6 +25,8 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, Verify},
 	MultiSignature, OpaqueExtrinsic,
 };
+/// Genesis generation helpers & primitives.
+pub mod genesis;
 
 /// An index to a block.
 pub type BlockNumber = u32;

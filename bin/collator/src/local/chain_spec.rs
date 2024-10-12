@@ -3,10 +3,10 @@ use common_primitives::{AccountId, Balance, Block};
 use development_runtime::{
 	wasm_binary_unwrap, AuthorityDiscoveryConfig, BabeConfig, BalancesConfig, CouncilConfig,
 	DemocracyConfig, ElectionsConfig, GluttonConfig, GrandpaConfig, ImOnlineConfig, IndicesConfig,
-	MaxNominations, NominationPoolsConfig, RuntimeGenesisConfig, SessionConfig, SessionKeys,
-	Signature, SocietyConfig, StakerStatus, StakingConfig, SudoConfig, SystemConfig,
-	TechnicalCommitteeConfig, BABE_GENESIS_EPOCH_CONFIG, NATIVEX, TOKEN_DECIMALS, TOKEN_SYMBOL,
-	WASM_BINARY,
+	MaxNominations, NodeAuthorizationConfig, NominationPoolsConfig, RuntimeGenesisConfig,
+	SessionConfig, SessionKeys, Signature, SocietyConfig, StakerStatus, StakingConfig, SudoConfig,
+	SystemConfig, TechnicalCommitteeConfig, BABE_GENESIS_EPOCH_CONFIG, NATIVEX, TOKEN_DECIMALS,
+	TOKEN_SYMBOL, WASM_BINARY,
 };
 
 use grandpa_primitives::AuthorityId as GrandpaId;
@@ -24,6 +24,8 @@ use sp_runtime::{
 
 use sc_telemetry::TelemetryEndpoints;
 use serde::{Deserialize, Serialize};
+
+use sp_core::OpaquePeerId;
 
 // The URL for the telemetry server.
 // const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
@@ -131,16 +133,16 @@ fn configure_accounts(
 		vec![
 			get_account_id_from_seed::<sr25519::Public>("Alice"),
 			get_account_id_from_seed::<sr25519::Public>("Bob"),
-			get_account_id_from_seed::<sr25519::Public>("Charlie"),
-			get_account_id_from_seed::<sr25519::Public>("Dave"),
-			get_account_id_from_seed::<sr25519::Public>("Eve"),
-			get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-			get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
+			// get_account_id_from_seed::<sr25519::Public>("Charlie"),
+			// get_account_id_from_seed::<sr25519::Public>("Dave"),
+			// get_account_id_from_seed::<sr25519::Public>("Eve"),
+			// get_account_id_from_seed::<sr25519::Public>("Ferdie"),
+			// get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
 			get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-			get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-			get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-			get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-			get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
+			// get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
+			// get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
+			// get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
+			// get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
 		]
 	});
 	// endow all authorities and nominators.
@@ -253,6 +255,8 @@ fn testnet_genesis(
 			key: Some(root_key),
 		},
 
+		// no need to pass anything to babe, in fact it will panic if we do. Session will take care
+		// of this.
 		babe: BabeConfig { epoch_config: BABE_GENESIS_EPOCH_CONFIG, ..Default::default() },
 		im_online: ImOnlineConfig { keys: vec![] },
 		authority_discovery: Default::default(),
@@ -276,6 +280,8 @@ fn testnet_genesis(
 			min_join_bond: 1 * NATIVEX,
 			..Default::default()
 		},
+
+		node_authorization: NodeAuthorizationConfig { nodes: vec![] },
 		glutton: Default::default(),
 	};
 	serde_json::to_value(&config).expect("Could not build genesis config.")
@@ -289,7 +295,7 @@ fn development_config_genesis_json() -> serde_json::Value {
 		Some(vec![
 			get_account_id_from_seed::<sr25519::Public>("Alice"),
 			get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-			get_account_id_from_seed::<sr25519::Public>("Bob/stash"),
+			get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
 		]),
 	)
 }
@@ -301,6 +307,17 @@ pub fn development_config() -> ChainSpec {
 		.with_id("dev")
 		.with_properties(get_properties())
 		.with_chain_type(ChainType::Development)
+		.with_genesis_config(development_config_genesis_json())
+		.build()
+}
+
+/// Nativex configure
+pub fn nativex_config() -> ChainSpec {
+	ChainSpec::builder(wasm_binary_unwrap(), Default::default())
+		.with_name("Nativex Node")
+		.with_id("nativex")
+		.with_properties(get_properties())
+		.with_chain_type(ChainType::Live)
 		.with_genesis_config(development_config_genesis_json())
 		.build()
 }

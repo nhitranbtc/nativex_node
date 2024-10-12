@@ -89,6 +89,7 @@ pallet-nfts = { workspace = true }
 pallet-nomination-pools = { workspace = true }
 pallet-nomination-pools-runtime-api = { workspace = true }
 pallet-nis = { workspace = true }
+pallet-node-authorization = {workspace = true }
 pallet-ranked-collective = { workspace = true }
 pallet-recovery = { workspace = true }
 pallet-referenda = { workspace = true }
@@ -183,6 +184,7 @@ std = [
 	"pallet-nomination-pools/std",
 	"pallet-nomination-pools-runtime-api/std",
 	"pallet-nis/std",
+	"pallet-node-authorization/std",
 	"pallet-offences/std",
 	"pallet-preimage/std",
 	"pallet-proxy/std",
@@ -233,6 +235,9 @@ std = [
 	"common-primitives/std",
 	"nativex-rand-extension/std",
 ]
+# Enable metadata hash generation at compile time for the `CheckMetadataHash` extension
+metadata-hash = ["substrate-wasm-builder?/metadata-hash"]
+
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",

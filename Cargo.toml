@@ -1,8 +1,9 @@
 [workspace]
 members = [
-    "node",
-    "node/cli",
-    "node/service",
+    "bin/collator",
+    # "node",
+    # "node/cli",
+    # "node/service",
     #"pallets/template",
     "runtime/common",
     "runtime/development",
@@ -31,17 +32,20 @@ static_assertions = "1.1.0"
 clap = { version = "4.2.5", features = ["derive"]}
 jsonrpsee = { version = "0.22", features = ["server"] }
 futures = "0.3.21"
-rand = "0.8"
+rand = {version = "0.8.5", default-features = false}
 # pallet-asset-conversion: turn on "num-traits" feature
 primitive-types = { version = "0.12.0", default-features = false, features = ["codec", "scale-info", "num-traits"] }
 # (native)
 array-bytes = "6.0.0"
 
-serde = { version = "1.0.197", default-features = false }
+
+serde = { version = "1.0.151", default-features = false, features = ["derive", "alloc"] }
+serde_json = { version = "1.0.92", default-features = false }
+
 serde-big-array = { version = "0.3.2" }
 serde_derive = { version = "1.0.117" }
-serde_json = { version = "1.0.114", default-features = false }
 serde_yaml = { version = "0.9" }
+bs58 = { version = "0.5.1", default-features = false }
 
 # Substrate
 # (wasm)
@@ -153,6 +157,7 @@ pallet-nomination-pools = {  default-features = false, git = "https://github.com
 pallet-nomination-pools-runtime-api = {  default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0"}
 #pallet-nft-fractionalization = {  default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0"}
 pallet-nis = {  default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0"}
+pallet-node-authorization = {  default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0"}
 pallet-ranked-collective = {  default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0"}
 pallet-recovery = {  default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0"}
 pallet-referenda = {  default-features = false, git = "https://github.com/paritytech/polkadot-sdk", branch = "release-polkadot-v1.11.0"}
