@@ -24,4 +24,5 @@ impl pallet_bounties::Config for Runtime {
 	type MaximumReasonLength = MaximumReasonLength;
 	type WeightInfo = pallet_bounties::weights::SubstrateWeight<Runtime>;
 	type ChildBountyManager = ChildBounties;
+	type OnSlash = Treasury;
 }

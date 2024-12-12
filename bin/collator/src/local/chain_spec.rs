@@ -48,7 +48,7 @@ pub struct Extensions {
 }
 
 /// Specialized `ChainSpec`.
-pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
+pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 // pub type ChainSpec = sc_service::GenericChainSpec<RuntimeGenesisConfig>;
