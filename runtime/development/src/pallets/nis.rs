@@ -1,6 +1,7 @@
 use pallet_nis::WithMaximumOf;
 
-/// A pallet allowing accounts to auction for being frozen and receive open-ended inflation-protection in return.
+/// A pallet allowing accounts to auction for being frozen and receive open-ended
+/// inflation-protection in return.
 use crate::*;
 
 parameter_types! {
@@ -39,5 +40,5 @@ impl pallet_nis::Config for Runtime {
 	type IntakePeriod = IntakePeriod;
 	type MaxIntakeWeight = MaxIntakeWeight;
 	type ThawThrottle = ThawThrottle;
-	type HoldReason = NisHoldReason;
+	type RuntimeHoldReason = RuntimeHoldReason;
 }

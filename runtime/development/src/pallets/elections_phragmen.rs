@@ -23,9 +23,10 @@ impl pallet_elections_phragmen::Config for Runtime {
 	type PalletId = ElectionsPhragmenPalletId;
 	type Currency = Balances;
 	type ChangeMembers = Council;
-	// NOTE: this implies that council's genesis members cannot be set directly and must come from this module.
+	// NOTE: this implies that council's genesis members cannot be set directly and must come from
+	// this module.
 	type InitializeMembers = Council;
-	type CurrencyToVote = U128CurrencyToVote;
+	type CurrencyToVote = sp_staking::currency_to_vote::U128CurrencyToVote;
 	type CandidacyBond = CandidacyBond;
 	type VotingBondBase = VotingBondBase;
 	type VotingBondFactor = VotingBondFactor;

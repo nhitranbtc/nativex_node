@@ -1,27 +1,29 @@
-use crate::{AccountId, Balance, Block, Index};
-use common_primitives::BlockNumber;
-use sp_api::NumberFor;
+use common_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
 use sp_runtime::{
 	generic::SignedBlock,
-	traits::{BlakeTwo256, Block as BlockT},
+	traits::{BlakeTwo256, Block as BlockT, NumberFor},
 	Justifications,
 };
 use std::sync::Arc;
+use sp_blockchain::{self as blockchain};
+
+pub use development_runtime;
+use crate::local::service::FullClient;
+use crate::local::service::DevelopmentExecutor;
+use crate::local::service::FullBackend;
 
 #[derive(Clone)]
 pub enum Client {
-	#[cfg(feature = "with-development-runtime")]
 	Development(
-		Arc<crate::FullClient<development_runtime::RuntimeApi, crate::DevelopmentExecutor>>,
+		Arc<FullClient<development_runtime::RuntimeApi, DevelopmentExecutor>>,
 	),
 }
 
-#[cfg(feature = "with-development-runtime")]
-impl From<Arc<crate::FullClient<development_runtime::RuntimeApi, crate::DevelopmentExecutor>>>
+impl From<Arc<FullClient<development_runtime::RuntimeApi, DevelopmentExecutor>>>
 	for Client
 {
 	fn from(
-		client: Arc<crate::FullClient<development_runtime::RuntimeApi, crate::DevelopmentExecutor>>,
+		client: Arc<FullClient<development_runtime::RuntimeApi, DevelopmentExecutor>>,
 	) -> Self {
 		Self::Development(client)
 	}
@@ -154,7 +156,7 @@ impl sc_client_api::backend::AuxStore for Client {
 	}
 }
 
-impl sc_client_api::backend::StorageProvider<Block, crate::FullBackend> for Client {
+impl sc_client_api::backend::StorageProvider<Block, FullBackend> for Client {
 	fn storage(
 		&self,
 		hash: <Block as BlockT>::Hash,
@@ -169,7 +171,7 @@ impl sc_client_api::backend::StorageProvider<Block, crate::FullBackend> for Clie
 		start_key: Option<&sc_client_api::StorageKey>,
 	) -> sp_blockchain::Result<
 		sc_client_api::KeysIter<
-			<crate::FullBackend as sc_client_api::Backend<Block>>::State,
+			<FullBackend as sc_client_api::Backend<Block>>::State,
 			Block,
 		>,
 	> {
@@ -189,7 +191,7 @@ impl sc_client_api::backend::StorageProvider<Block, crate::FullBackend> for Clie
 		start_key: Option<&sc_client_api::StorageKey>,
 	) -> sp_blockchain::Result<
 		sc_client_api::PairsIter<
-			<crate::FullBackend as sc_client_api::Backend<Block>>::State,
+			<FullBackend as sc_client_api::Backend<Block>>::State,
 			Block,
 		>,
 	> {
@@ -211,6 +213,7 @@ impl sc_client_api::backend::StorageProvider<Block, crate::FullBackend> for Clie
 	) -> sp_blockchain::Result<Option<<Block as BlockT>::Hash>> {
 		match_client!(self, child_storage_hash(hash, child_info, key))
 	}
+
 	fn child_storage_keys(
 		&self,
 		hash: <Block as BlockT>::Hash,
@@ -219,11 +222,28 @@ impl sc_client_api::backend::StorageProvider<Block, crate::FullBackend> for Clie
 		start_key: Option<&sc_client_api::StorageKey>,
 	) -> sp_blockchain::Result<
 		sc_client_api::KeysIter<
-			<crate::FullBackend as sc_client_api::Backend<Block>>::State,
+			<FullBackend as sc_client_api::Backend<Block>>::State,
 			Block,
 		>,
 	> {
 		match_client!(self, child_storage_keys(hash, child_info, prefix, start_key))
+	}
+
+	fn closest_merkle_value(
+		&self,
+		hash: <Block as BlockT>::Hash,
+		key: &sc_client_api::StorageKey,
+	) -> blockchain::Result<Option<sp_trie::MerkleValue<<Block as BlockT>::Hash>>> {
+		match_client!(self, closest_merkle_value(hash, key))
+	}
+
+	fn child_closest_merkle_value(
+		&self,
+		hash: <Block as BlockT>::Hash,
+		child_info: &sc_client_api::ChildInfo,
+		key: &sc_client_api::StorageKey,
+	) -> blockchain::Result<Option<sp_trie::MerkleValue<<Block as BlockT>::Hash>>> {
+		match_client!(self, child_closest_merkle_value(hash, child_info, key))
 	}
 }
 
@@ -236,7 +256,6 @@ impl sc_client_api::UsageProvider<Block> for Client {
 macro_rules! match_client {
 	($self:ident, $method:ident($($param:ident),*)) => {
 		match $self {
-			#[cfg(feature = "with-development-runtime")]
 			Self::Development(client) => client.$method($($param),*),
 			_ => todo!()
 		}
@@ -267,13 +286,13 @@ pub trait RuntimeApiCollection:
 	//+ mmr_rpc::MmrRuntimeApi<Block, <Block as sp_runtime::traits::Block>::Hash, BlockNumber>
 	//+ fp_rpc::EthereumRuntimeRPCApi<Block>
 	//+ fp_rpc::ConvertTransactionRuntimeApi<Block>
-where
-	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
+// where
+// 	B: sc_client_api::Backend<Block> + Send + Sync + 'static,
+// 	B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>,
 {
 }
 
-impl<Api> RuntimeApiCollection for Api
-where
+impl<Api> RuntimeApiCollection for Api where
 	Api: sp_api::ApiExt<Block>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
 		+ sp_api::Metadata<Block>
@@ -286,13 +305,7 @@ where
 		+ sp_session::SessionKeys<Block>
 		+ sp_transaction_pool::runtime_api::TaggedTransactionQueue<Block>
 		+ substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>
-		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
-	//+ frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Nonce>,
-	//+ pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<Block, Balance>
-	//+ pallet_contracts_rpc::ContractsRuntimeApi<Block, AccountId, Balance, BlockNumber, Hash>
-	//+ mmr_rpc::MmrRuntimeApi<Block, <Block as sp_runtime::traits::Block>::Hash, BlockNumber>,
-	//+ fp_rpc::EthereumRuntimeRPCApi<Block>
-	//+ fp_rpc::ConvertTransactionRuntimeApi<Block>
-	<Self as sp_api::ApiExt<Block>>::StateBackend: sp_api::StateBackend<BlakeTwo256>,
+		+ pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance> /* B: sc_client_api::Backend<Block> + Send + Sync + 'static,
+	                                                                                 * B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>, */
 {
 }

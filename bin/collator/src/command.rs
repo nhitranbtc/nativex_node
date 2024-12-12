@@ -1,20 +1,45 @@
-//use crate::benchmarking::{inherent_benchmark_data, RemarkBuilder, TransferKeepAliveBuilder};
+use crate::{
+	cli::{Cli, Subcommand},
+	local::{self, development_config, nativex_config},
+};
 
-use crate::cli::{Cli, Subcommand};
+use log::{error, info};
 
 use futures::future::BoxFuture;
-use service::{chain_spec, IdentifyVariant};
 
-use development_runtime::Block;
-
+use crate::local::{chain_spec, service};
 use frame_benchmarking_cli::{BenchmarkCmd, ExtrinsicFactory, SUBSTRATE_REFERENCE_HARDWARE};
-use sc_cli::{ChainSpec, RuntimeVersion, SubstrateCli};
+use sc_cli::{ChainSpec, Result, RuntimeVersion, SubstrateCli};
 use sc_service::PartialComponents;
 use sp_core::hexdisplay::ascii_format;
 use sp_keyring::Sr25519Keyring;
 
+use common_primitives::Block;
+
 #[cfg(feature = "try-runtime")]
 use try_runtime_cli::block_building_info::timestamp_with_aura_info;
+
+pub trait IdentifyChain {
+	fn is_production(&self) -> bool;
+	fn is_development(&self) -> bool;
+}
+impl IdentifyChain for dyn sc_service::ChainSpec {
+	fn is_production(&self) -> bool {
+		self.id().starts_with("production")
+	}
+	fn is_development(&self) -> bool {
+		self.id().starts_with("dev")
+	}
+}
+
+impl<T: sc_service::ChainSpec + 'static> IdentifyChain for T {
+	fn is_production(&self) -> bool {
+		<dyn sc_service::ChainSpec>::is_production(self)
+	}
+	fn is_development(&self) -> bool {
+		<dyn sc_service::ChainSpec>::is_development(self)
+	}
+}
 
 impl SubstrateCli for Cli {
 	fn impl_name() -> String {
@@ -41,42 +66,38 @@ impl SubstrateCli for Cli {
 		2017
 	}
 
-	fn load_spec(&self, id: &str) -> Result<Box<dyn sc_service::ChainSpec>, String> {
-		Ok(match id {
-			#[cfg(feature = "with-development-runtime")]
-			"dev" => Box::new(chain_spec::development::development_config()?),
-			#[cfg(feature = "with-development-runtime")]
-			"" | "local" => Box::new(chain_spec::development::local_testnet_config()?),
-			//path => Box::new(chain_spec::development::ChainSpec::from_json_file(
-			//	std::path::PathBuf::from(path),
-			//)?),
+	fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+		info!("id-arg: {:?}", id);
+		let spec = match id {
+			"" =>
+				return Err(
+					"Please specify which chain you want to run, e.g. --dev or --chain=local"
+						.into(),
+				),
+
+			"dev" => Box::new(development_config()),
+			// "nativex" => Box::new(nativex_config()),
+			"nativex" => Box::new(chain_spec::ChainSpec::from_json_bytes(
+				&include_bytes!("../res/nativex.raw.json")[..],
+			)?),
 			path => {
-				let path = std::path::PathBuf::from(path);
-				let chain_spec =
-					Box::new(service::chain_spec::DummyChainSpec::from_json_file(path.clone())?)
-						as Box<dyn sc_service::ChainSpec>;
+				let chain_spec = chain_spec::ChainSpec::from_json_file(path.into())?;
+
 				if chain_spec.is_development() {
-					#[cfg(feature = "with-development-runtime")]
-					{
-						Box::new(chain_spec::development::ChainSpec::from_json_file(path)?)
-					}
-					#[cfg(not(feature = "with-development-runtime"))]
-					return Err(service::DEVELOPMENT_RUNTIME_NOT_AVAILABLE.into());
+					Box::new(chain_spec::ChainSpec::from_json_file(path.into())?)
 				} else {
 					return Err(service::RUNTIME_NOT_AVAILABLE.into());
 				}
 			},
-		})
-	}
-
-	fn native_runtime_version(_: &Box<dyn ChainSpec>) -> &'static RuntimeVersion {
-		&development_runtime::VERSION
+		};
+		Ok(spec)
 	}
 }
 
 /// Parse and run command line arguments
 pub fn run() -> sc_cli::Result<()> {
 	let cli = Cli::from_args();
+	info!("id-arg: {:?}", cli);
 
 	match &cli.subcommand {
 		Some(Subcommand::Key(cmd)) => cmd.run(&cli),
@@ -130,87 +151,7 @@ pub fn run() -> sc_cli::Result<()> {
 		Some(Subcommand::Benchmark(cmd)) => {
 			todo!()
 		},
-		// Some(Subcommand::Benchmark(cmd)) => {
-		// 	let runner = cli.create_runner(cmd)?;
 
-		// 	runner.sync_run(|config| {
-		// 		// This switch needs to be in the client, since the client decides
-		// 		// which sub-commands it wants to support.
-		// 		match cmd {
-		// 			BenchmarkCmd::Pallet(cmd) => {
-		// 				if !cfg!(feature = "runtime-benchmarks") {
-		// 					return Err(
-		// 						"Runtime benchmarking wasn't enabled when building the node. \
-		// 					You can enable it with `--features runtime-benchmarks`."
-		// 							.into(),
-		// 					);
-		// 				} else {
-		// 					let chain_spec = &config.chain_spec;
-		// 					if chain_spec.is_development() {
-		// 						#[cfg(feature = "with-development-runtime")]
-		// 						return cmd
-		// 							.run::<service::development_runtime::Block, service::DevelopmentExecutor>(
-		// 								config,
-		// 				);
-		// 			#[cfg(not(feature = "with-development-runtime"))]
-		// 			return Err(service::RUNTIME_NOT_AVAILABLE.into());
-		// 		} else {
-		// 			return Err(service::RUNTIME_NOT_AVAILABLE.into());
-		// 		}
-		// 	}
-
-		// 	//cmd.run::<Block, service::ExecutorDispatch>(config)
-		// },
-		// BenchmarkCmd::Block(cmd) => {
-		// 	let PartialComponents { client, .. } = service::new_partial(&config)?;
-		// 	cmd.run(client)
-		// },
-		// #[cfg(not(feature = "runtime-benchmarks"))]
-		// BenchmarkCmd::Storage(_) => Err(
-		// 	"Storage benchmarking can be enabled with `--features runtime-benchmarks`."
-		// 		.into(),
-		// ),
-		// #[cfg(feature = "runtime-benchmarks")]
-		// BenchmarkCmd::Storage(cmd) => {
-		// 	let PartialComponents { client, backend, .. } =
-		// 		service::new_partial(&config)?;
-		// 	let db = backend.expose_db();
-		// 	let storage = backend.expose_storage();
-
-		// 	cmd.run(config, client, db, storage)
-		// },
-		// BenchmarkCmd::Overhead(cmd) => {
-		// 	let PartialComponents { client, .. } = service::new_partial(&config)?;
-		// 	let ext_builder = RemarkBuilder::new(client.clone());
-
-		// 	cmd.run(
-		// 		config,
-		// 		client,
-		// 		inherent_benchmark_data()?,
-		// 		Vec::new(),
-		// 		&ext_builder,
-		// 	)
-		// },
-		// BenchmarkCmd::Extrinsic(cmd) => {
-		// 	let PartialComponents { client, .. } = service::new_partial(&config)?;
-		// 	// Register the *Remark* and *TKA* builders.
-		// 	let ext_factory = ExtrinsicFactory(vec![
-		// 		Box::new(RemarkBuilder::new(client.clone())),
-		// 		Box::new(TransferKeepAliveBuilder::new(
-		// 			client.clone(),
-		// 			Sr25519Keyring::Alice.to_account_id(),
-		// 			EXISTENTIAL_DEPOSIT,
-		// 		)),
-		// 	]);
-
-		// 	cmd.run(client, inherent_benchmark_data()?, Vec::new(), &ext_factory)
-		// },
-		// BenchmarkCmd::Machine(cmd) => {
-		// 	cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone())
-		// 			// },
-		// 		}
-		// 	})
-		// },
 		#[cfg(feature = "try-runtime")]
 		Some(Subcommand::TryRuntime(cmd)) => {
 			use crate::service::ExecutorDispatch;
@@ -247,18 +188,15 @@ pub fn run() -> sc_cli::Result<()> {
 			runner.run_node_until_exit(|config| async move {
 				let chain_spec = &config.chain_spec;
 				if chain_spec.is_development() {
-					#[cfg(feature = "with-development-runtime")]
 					{
 						return service::new_full::<
-							service::development_runtime::RuntimeApi,
+							development_runtime::RuntimeApi,
 							service::DevelopmentExecutor,
 						>(config)
 						.map_err(sc_cli::Error::Service);
 					}
-					#[cfg(not(feature = "with-development-runtime"))]
-					return Err(service::RUNTIME_NOT_AVAILABLE.into());
 				} else {
-					return Err(service::RUNTIME_NOT_AVAILABLE.into());
+					return Err(service::SUBCMD_RUNTIME_NOT_AVAILABLE.into());
 				}
 			})
 		},

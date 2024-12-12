@@ -1,4 +1,5 @@
-/// An index is a short form of an address. This module handles allocation of indices for a newly created accounts.
+/// An index is a short form of an address. This module handles allocation of indices for a
+/// newly created accounts.
 use crate::*;
 
 parameter_types! {

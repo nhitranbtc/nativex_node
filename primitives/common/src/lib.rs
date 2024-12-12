@@ -25,6 +25,8 @@ use sp_runtime::{
 	traits::{BlakeTwo256, IdentifyAccount, Verify},
 	MultiSignature, OpaqueExtrinsic,
 };
+/// Genesis generation helpers & primitives.
+pub mod genesis;
 
 /// An index to a block.
 pub type BlockNumber = u32;
@@ -44,6 +46,9 @@ pub type Balance = u128;
 
 /// Type used for expressing timestamp.
 pub type Moment = u64;
+
+/// Index of a transaction in the chain.
+pub type Nonce = u32;
 
 /// Index of a transaction in the chain.
 pub type Index = u32;

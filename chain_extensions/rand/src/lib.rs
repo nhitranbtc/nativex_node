@@ -1,13 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::{
-	log::{error, trace},
-	traits::Randomness,
-};
+use codec::Encode;
+use frame_support::traits::Randomness;
+use log::{error, trace};
 use pallet_contracts::chain_extension::{
 	ChainExtension, Environment, Ext, InitState, RetVal, SysConfig,
 };
-use parity_scale_codec::Encode;
 use sp_core::crypto::UncheckedFrom;
 use sp_runtime::DispatchError;
 

@@ -1,4 +1,5 @@
-/// Provides generalized message queuing and processing capabilities on a per-queue basic for arbitrary use-cases.
+/// Provides generalized message queuing and processing capabilities on a per-queue basic for
+/// arbitrary use-cases.
 use crate::*;
 
 parameter_types! {
@@ -15,7 +16,9 @@ impl pallet_message_queue::Config for Runtime {
 	type MessageProcessor = pallet_message_queue::mock_helpers::NoopMessageProcessor<u32>;
 	type Size = u32;
 	type QueueChangeHandler = ();
+	type QueuePausedQuery = ();
 	type HeapSize = ConstU32<{ 64 * 1024 }>;
 	type MaxStale = ConstU32<128>;
 	type ServiceWeight = MessageQueueServiceWeight;
+	type IdleMaxServiceWeight = ();
 }

@@ -13,12 +13,12 @@ repository.workspace = true
 
 [dependencies]
 #third-party dependenciesmm
-parity-scale-codec = { workspace = true } 
-scale-info =  { workspace = true }
+codec = { workspace = true } 
 static_assertions ={ workspace = true } 
 log = { workspace = true }
+serde_json = { features = ["alloc", "arbitrary_precision"], workspace = true }
+scale-info = { version = "2.11.1", default-features = false, features = ["derive", "serde"] }
 
-# pallet-asset-conversion: turn on "num-traits" feature
 primitive-types = { workspace = true }
 
 # primitives
@@ -38,6 +38,7 @@ sp-offchain = { workspace = true }
 sp-session = { workspace = true }
 sp-transaction-pool = { workspace = true }
 sp-staking = { workspace = true }
+sp-genesis-builder = { workspace = true }
 
 # frame dependencies
 frame-executive = { workspace = true }
@@ -87,8 +88,8 @@ pallet-mmr = { workspace = true }
 pallet-nfts = { workspace = true }
 pallet-nomination-pools = { workspace = true }
 pallet-nomination-pools-runtime-api = { workspace = true }
-#pallet-nft-fractionalization = { workspace = true }
 pallet-nis = { workspace = true }
+pallet-node-authorization = {workspace = true }
 pallet-ranked-collective = { workspace = true }
 pallet-recovery = { workspace = true }
 pallet-referenda = { workspace = true }
@@ -103,7 +104,6 @@ pallet-society = { workspace = true }
 pallet-staking-reward-curve = { workspace = true }
 pallet-staking = { workspace = true }
 pallet-state-trie-migration = { workspace = true }
-#pallet-statement = { workspace = true }
 pallet-scheduler = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-tips= { workspace = true }
@@ -134,8 +134,9 @@ substrate-wasm-builder = { workspace = true, optional = true }
 [features]
 default = ["std"]
 std = [
-	"parity-scale-codec/std",
+	"codec/std",
 	"scale-info/std",
+	"sp-genesis-builder/std",
 	"frame-benchmarking?/std",
 	"frame-election-provider-support/std",
 	"frame-executive/std",
@@ -155,7 +156,6 @@ std = [
 	"pallet-authorship/std",
 	"pallet-alliance/std",
 	"pallet-asset-rate/std",
-	#"pallet-asset-conversion/std",
 	"pallet-babe/std",
 	"pallet-balances/std",
 	"pallet-bags-list/std",
@@ -181,10 +181,10 @@ std = [
 	"pallet-message-queue/std",
 	"pallet-mmr/std",
 	"pallet-nfts/std",
-	#"pallet-nft-fractionalization/std",
 	"pallet-nomination-pools/std",
 	"pallet-nomination-pools-runtime-api/std",
 	"pallet-nis/std",
+	"pallet-node-authorization/std",
 	"pallet-offences/std",
 	"pallet-preimage/std",
 	"pallet-proxy/std",
@@ -197,7 +197,6 @@ std = [
 	"pallet-salary/std",
 	"pallet-society/std",
 	"pallet-staking/std",
-	#"pallet-statement/std",
 	"pallet-state-trie-migration/std",
 	"pallet-scheduler/std",
 	"pallet-sudo/std",
@@ -236,6 +235,9 @@ std = [
 	"common-primitives/std",
 	"nativex-rand-extension/std",
 ]
+# Enable metadata hash generation at compile time for the `CheckMetadataHash` extension
+metadata-hash = ["substrate-wasm-builder?/metadata-hash"]
+
 runtime-benchmarks = [
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",

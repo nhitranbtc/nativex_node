@@ -1,5 +1,5 @@
-/// This pallet provide the basi logic to pay the absolute minimum amount needed for a transaction to be inclued.
-/// This includes: `base_fee`, `weight_fee`, `length_fee`, `tip`.
+/// This pallet provide the basi logic to pay the absolute minimum amount needed for a
+/// transaction to be inclued. This includes: `base_fee`, `weight_fee`, `length_fee`, `tip`.
 /// `inclusion_fee = base_fee + length_fee + [targeted_fee_adjustment*weight_fee`];
 /// `final_fee = inclusion_fee + tip`.
 use crate::*;

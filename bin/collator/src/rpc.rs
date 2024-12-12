@@ -5,7 +5,10 @@
 
 #![warn(missing_docs)]
 
-use crate::{client::RuntimeApiCollection, Block, BlockNumber, Hash};
+use crate::{client::RuntimeApiCollection};
+
+use common_primitives::{AccountId, Balance, Block, BlockNumber, Hash, Index};
+
 use grandpa::{
 	FinalityProofProvider, GrandpaJustificationStream, SharedAuthoritySet, SharedVoterState,
 };
@@ -25,8 +28,7 @@ use sp_consensus_babe::BabeApi;
 use sp_keystore::KeystorePtr;
 use std::sync::Arc;
 
-#[cfg(feature = "with-development-runtime")]
-use development_runtime;
+use sc_service::Properties;
 
 /// Extra dependencies for BABE.
 pub struct BabeDeps {
@@ -82,12 +84,12 @@ where
 		+ Send
 		+ Sync
 		+ 'static,
-	C::Api: RuntimeApiCollection<StateBackend = BE::State>,
+	C::Api: RuntimeApiCollection,
 	C::Api: BlockBuilder<Block>,
 	P: TransactionPool + 'static,
 	SC: SelectChain<Block> + 'static,
 	BE: sc_client_api::Backend<Block> + Send + Sync + 'static,
-	BE::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashFor<Block>>,
+	BE::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashingFor<Block>>,
 	BE::Blockchain: BlockchainBackend<Block>,
 {
 	//use mmr_rpc::{Mmr, MmrApiServer};
@@ -98,6 +100,7 @@ where
 		dev::{Dev, DevApiServer},
 		//statement::StatementApiServer,
 	};
+
 	use sc_rpc_spec_v2::chain_spec::{ChainSpec, ChainSpecApiServer};
 	use sc_sync_state_rpc::{SyncState, SyncStateApiServer};
 	use substrate_frame_rpc_system::{System, SystemApiServer};
@@ -114,7 +117,7 @@ where
 		finality_provider,
 	} = grandpa;
 
-	io.merge(System::new(client.clone(), pool.clone(), deny_unsafe).into_rpc())?;
+	io.merge(System::new(client.clone(), pool, deny_unsafe).into_rpc())?;
 	// Making sysnchronous calls in light client freezes the browser currently,
 	// more context: https://github.com/paritytech/substrate/pull/3480
 	// These RPCs should use an asynchronous caller instead.
